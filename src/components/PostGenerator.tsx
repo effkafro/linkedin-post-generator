@@ -1,6 +1,20 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePostGenerator, type Tone, type Style, type Language, type RefineAction } from '../hooks/usePostGenerator'
 import type { InputMode, SourceInfo } from '../types/history'
+
+const TONE_DESCRIPTIONS: Record<Tone, string> = {
+  professional: 'Seriös, fachlich, business-orientiert. Branchenjargon erlaubt.',
+  casual: 'Locker, authentisch, nahbar. Persönliche "Ich"-Perspektive.',
+  inspirational: 'Motivierend, empowernd, positiv. Emotionale Trigger und Metaphern.',
+  educational: 'Lehrreich, informativ, How-to-Stil. Klar strukturiert mit Bullet Points.',
+}
+
+const STYLE_DESCRIPTIONS: Record<Style, string> = {
+  story: 'Persönliche Geschichte mit Lesson Learned. "Als ich vor X Jahren..."',
+  listicle: 'Nummerierte Liste mit Key Points. "5 Dinge, die ich gelernt habe..."',
+  'question-hook': 'Startet mit provokanter Frage. "Was wäre, wenn...?"',
+  'bold-statement': 'Startet mit mutiger These. "X ist tot." oder "Vergiss alles über X."',
+}
 
 export interface PostGeneratorProps {
   initialState?: {
@@ -67,6 +81,8 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
   const [style, setStyle] = useState<Style>(initialState?.style ?? 'story')
   const [language, setLanguage] = useState<Language>(initialState?.language ?? 'de')
   const [copied, setCopied] = useState(false)
+  const [showToneHelp, setShowToneHelp] = useState(false)
+  const [showStyleHelp, setShowStyleHelp] = useState(false)
 
   const {
     output,
@@ -158,6 +174,21 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
 
   const canGenerate = mode === 'topic' ? topic.trim() : (url.trim() && isValidUrl(url))
 
+  // Close help modals on Escape key
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowToneHelp(false)
+      setShowStyleHelp(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (showToneHelp || showStyleHelp) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showToneHelp, showStyleHelp, handleKeyDown])
+
   return (
     <div className="min-h-screen py-12 px-4 transition-colors duration-300">
       <div className="max-w-3xl mx-auto space-y-8">
@@ -238,9 +269,21 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
             {/* Dropdowns Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <label htmlFor="tone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Tonfall
-                </label>
+                <div className="flex items-center">
+                  <label htmlFor="tone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Tonfall
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowToneHelp(true)}
+                    className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Tonfall-Hilfe anzeigen"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="relative">
                   <select
                     id="tone"
@@ -261,9 +304,21 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="style" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Stil
-                </label>
+                <div className="flex items-center">
+                  <label htmlFor="style" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Stil
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowStyleHelp(true)}
+                    className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Stil-Hilfe anzeigen"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="relative">
                   <select
                     id="style"
@@ -337,6 +392,74 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {error}
+          </div>
+        )}
+
+        {/* Tone Help Modal */}
+        {showToneHelp && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-200"
+            onClick={() => setShowToneHelp(false)}
+          >
+            <div
+              className="bg-card text-card-foreground border border-border rounded-xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in-95 duration-200"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <h3 className="text-lg font-semibold">Tonfall-Optionen</h3>
+                <button
+                  onClick={() => setShowToneHelp(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Schließen"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                {TONE_OPTIONS.map(opt => (
+                  <div key={opt.value} className="space-y-1">
+                    <span className="font-medium text-foreground">{opt.label}</span>
+                    <p className="text-sm text-muted-foreground">{TONE_DESCRIPTIONS[opt.value]}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Style Help Modal */}
+        {showStyleHelp && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-200"
+            onClick={() => setShowStyleHelp(false)}
+          >
+            <div
+              className="bg-card text-card-foreground border border-border rounded-xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in-95 duration-200"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <h3 className="text-lg font-semibold">Stil-Optionen</h3>
+                <button
+                  onClick={() => setShowStyleHelp(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Schließen"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                {STYLE_OPTIONS.map(opt => (
+                  <div key={opt.value} className="space-y-1">
+                    <span className="font-medium text-foreground">{opt.label}</span>
+                    <p className="text-sm text-muted-foreground">{STYLE_DESCRIPTIONS[opt.value]}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
