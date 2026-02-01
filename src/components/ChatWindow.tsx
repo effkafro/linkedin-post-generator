@@ -18,35 +18,41 @@ export default function ChatWindow() {
   }
 
   return (
-    <div className="flex flex-col h-screen font-sans">
+    <div className="flex flex-col h-screen font-sans bg-background text-foreground transition-colors duration-300">
       {/* Header */}
-      <header className="px-6 py-4 bg-[#1a1a1a] border-b border-[#2a2a2a] text-center">
-        <h1 className="text-lg font-semibold text-white">Onboarding Buddy</h1>
-        <p className="text-sm text-gray-500 mt-1">Dein Assistent für den Einstieg ins Unternehmen</p>
+      <header className="px-6 py-4 bg-card border-b border-border shadow-sm text-center relative z-10">
+        <h1 className="text-lg font-semibold tracking-tight">Onboarding Buddy</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Dein Assistent für den Einstieg ins Unternehmen</p>
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-6 flex flex-col gap-6">
         {messages.map(msg => (
           <div
             key={msg.id}
-            className={
-              msg.role === 'user'
-                ? 'self-end max-w-[75%] bg-[#2563eb] text-white px-4 py-3 rounded-2xl rounded-br-sm shadow'
-                : 'self-start max-w-[75%] bg-[#1a1a1a] text-gray-200 border border-[#2a2a2a] px-4 py-3 rounded-2xl rounded-bl-sm shadow'
-            }
+            className={`flex flex-col max-w-[85%] md:max-w-[75%] ${msg.role === 'user' ? 'self-end items-end' : 'self-start items-start'
+              }`}
           >
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+            <div
+              className={`px-5 py-3.5 rounded-2xl shadow-sm text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
+                  ? 'bg-primary text-primary-foreground rounded-br-none'
+                  : 'bg-card border border-border text-card-foreground rounded-bl-none'
+                }`}
+            >
+              {msg.text}
+            </div>
           </div>
         ))}
 
         {loading && (
-          <div className="self-start max-w-[75%] bg-[#1a1a1a] border border-[#2a2a2a] px-4 py-3 rounded-2xl rounded-bl-sm shadow">
-            <span className="text-sm text-gray-500 italic flex items-center gap-1">
-              <span className="animate-pulse">●</span>
-              <span className="animate-pulse [animation-delay:0.2s]">●</span>
-              <span className="animate-pulse [animation-delay:0.4s]">●</span>
-            </span>
+          <div className="self-start items-start flex flex-col max-w-[75%]">
+            <div className="px-5 py-4 rounded-2xl rounded-bl-none bg-card border border-border shadow-sm">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"></span>
+              </span>
+            </div>
           </div>
         )}
 
@@ -54,22 +60,24 @@ export default function ChatWindow() {
       </div>
 
       {/* Input */}
-      <div className="px-6 py-4 bg-[#1a1a1a] border-t border-[#2a2a2a] flex gap-3">
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="Stelle eine Frage..."
-          className="flex-1 px-4 py-3 rounded-xl border border-[#333] bg-[#0a0a0a] text-gray-200 text-sm outline-none focus:border-[#2563eb] transition-colors"
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading}
-          className="px-6 py-3 rounded-xl bg-[#2563eb] text-white text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-        >
-          Senden
-        </button>
+      <div className="p-4 bg-card border-t border-border mt-auto">
+        <div className="max-w-3xl mx-auto flex gap-3">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSend()}
+            placeholder="Stelle eine Frage..."
+            className="flex-1 h-12 w-full rounded-md border border-input bg-background px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading}
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 shadow-sm"
+          >
+            Senden
+          </button>
+        </div>
       </div>
     </div>
   )
