@@ -153,3 +153,58 @@ VITE_WEBHOOK_URL=https://[n8n-instance]/webhook/linkedin-post-generator
 - OpenRouter API Key (in n8n Credentials)
 - Model: claude-3.5-sonnet (oder vergleichbar)
 - Temperature: 0.7 (kreativ aber konsistent)
+
+---
+
+## Post History Feature
+
+### Übersicht
+Die App speichert alle generierten Posts automatisch in einer Sidebar auf der linken Seite. Nutzer können frühere Posts wiederherstellen, um sie erneut zu bearbeiten oder als Vorlage zu verwenden.
+
+### Datenstruktur
+```typescript
+interface HistoryItem {
+  id: string              // UUID
+  topic: string           // Original Topic
+  tone: Tone              // Tone-Setting
+  style: Style            // Style-Setting
+  content: string         // Generierter Content
+  createdAt: string       // ISO Timestamp
+  charCount: number       // Zeichenanzahl
+}
+```
+
+### Speicherung
+- **localStorage Key:** `linkedin-post-history`
+- **Max. Einträge:** 50 (älteste werden automatisch entfernt)
+- **Auto-Save:** Bei jeder erfolgreichen Generierung
+
+### UI-Komponenten
+
+#### Sidebar (Desktop)
+- **Breite:** 320px (w-80)
+- **Position:** Links, immer sichtbar
+- **Inhalt:** Header mit "Verlauf", Clear All Button, scrollbare Liste
+
+#### Sidebar (Mobile < 1024px)
+- **Trigger:** Toggle-Button oben links (Clock-Icon)
+- **Verhalten:** Slide-in Drawer von links
+- **Backdrop:** Halbtransparentes Overlay
+- **Schließen:** X-Button, Backdrop-Klick, oder Escape-Taste
+
+#### History-Eintrag
+- Topic (truncated auf 40 Zeichen)
+- Content-Preview (truncated auf 80 Zeichen)
+- Relative Zeit (z.B. "vor 5 Min.")
+- Zeichenanzahl
+- Delete-Button (erscheint bei Hover)
+
+### Funktionen
+1. **Restore:** Klick auf Eintrag lädt Topic, Tone, Style und Content ins Formular
+2. **Delete:** Einzelnen Eintrag löschen
+3. **Clear All:** Alle Einträge löschen
+
+### States
+- **empty:** "Noch keine Posts generiert" mit Icon
+- **filled:** Liste der History-Einträge
+- **loading:** Kein spezieller State (synchron via localStorage)

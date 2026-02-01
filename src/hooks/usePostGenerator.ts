@@ -28,6 +28,7 @@ interface UsePostGeneratorReturn {
   refine: (action: RefineAction) => Promise<void>
   goToVersion: (index: number) => void
   reset: () => void
+  loadContent: (content: string) => void
 }
 
 const REFINE_PROMPTS: Record<RefineAction, string> = {
@@ -141,6 +142,18 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     setError(null)
   }, [])
 
+  const loadContent = useCallback((content: string) => {
+    const newVersion: PostVersion = {
+      id: crypto.randomUUID(),
+      content,
+      timestamp: new Date(),
+      action: 'generate',
+    }
+    setVersions([newVersion])
+    setCurrentIndex(0)
+    setError(null)
+  }, [])
+
   return {
     output,
     loading,
@@ -151,6 +164,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     generate,
     refine,
     goToVersion,
-    reset
+    reset,
+    loadContent
   }
 }

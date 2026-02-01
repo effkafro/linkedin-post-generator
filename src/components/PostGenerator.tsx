@@ -1,5 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePostGenerator, type Tone, type Style, type RefineAction } from '../hooks/usePostGenerator'
+
+export interface PostGeneratorProps {
+  initialState?: {
+    topic: string
+    tone: Tone
+    style: Style
+    content: string
+  }
+  onPostGenerated?: (data: { topic: string; tone: Tone; style: Style; content: string }) => void
+}
 
 const TONE_OPTIONS: { value: Tone; label: string }[] = [
   { value: 'professional', label: 'Professional' },
@@ -22,10 +32,10 @@ const REFINE_OPTIONS: { action: RefineAction; label: string }[] = [
   { action: 'casual', label: 'Lockerer' },
 ]
 
-export default function PostGenerator() {
-  const [topic, setTopic] = useState('')
-  const [tone, setTone] = useState<Tone>('professional')
-  const [style, setStyle] = useState<Style>('story')
+export default function PostGenerator({ initialState, onPostGenerated }: PostGeneratorProps) {
+  const [topic, setTopic] = useState(initialState?.topic ?? '')
+  const [tone, setTone] = useState<Tone>(initialState?.tone ?? 'professional')
+  const [style, setStyle] = useState<Style>(initialState?.style ?? 'story')
   const [copied, setCopied] = useState(false)
 
   const {
@@ -38,12 +48,45 @@ export default function PostGenerator() {
     generate,
     refine,
     goToVersion,
-    reset
+    reset,
+    loadContent
   } = usePostGenerator()
 
-  const handleGenerate = () => {
-    generate({ topic, tone, style })
+  // Track if we're restoring from history (don't save restored items)
+  const isRestoringRef = useRef(false)
+  const lastSavedVersionIdRef = useRef<string | null>(null)
+
+  // Handle initial state restoration from history
+  useEffect(() => {
+    if (initialState) {
+      isRestoringRef.current = true
+      setTopic(initialState.topic)
+      setTone(initialState.tone)
+      setStyle(initialState.style)
+      loadContent(initialState.content)
+    }
+  }, [initialState, loadContent])
+
+  const handleGenerate = async () => {
+    isRestoringRef.current = false
+    await generate({ topic, tone, style })
   }
+
+  // Trigger callback when a new post is generated (not restored)
+  useEffect(() => {
+    if (output && !loading && versions.length > 0 && onPostGenerated) {
+      const latestVersion = versions[versions.length - 1]
+      // Only save on initial generation, not refinements, and not when restoring
+      if (
+        latestVersion.action === 'generate' &&
+        !isRestoringRef.current &&
+        lastSavedVersionIdRef.current !== latestVersion.id
+      ) {
+        lastSavedVersionIdRef.current = latestVersion.id
+        onPostGenerated({ topic, tone, style, content: output })
+      }
+    }
+  }, [output, loading, versions, topic, tone, style, onPostGenerated])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(output)
