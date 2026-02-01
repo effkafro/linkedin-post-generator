@@ -1,13 +1,18 @@
 import { useState, useCallback } from 'react'
+import type { InputMode, SourceInfo } from '../types/history'
 
 export type Tone = 'professional' | 'casual' | 'inspirational' | 'educational'
 export type Style = 'story' | 'listicle' | 'question-hook' | 'bold-statement'
+export type Language = 'de' | 'en' | 'fr' | 'es' | 'it'
 export type RefineAction = 'shorter' | 'longer' | 'formal' | 'casual'
 
 interface GenerateParams {
+  mode: InputMode
   topic: string
+  url: string
   tone: Tone
   style: Style
+  language: Language
 }
 
 interface PostVersion {
@@ -15,6 +20,7 @@ interface PostVersion {
   content: string
   timestamp: Date
   action: 'generate' | RefineAction
+  source?: SourceInfo
 }
 
 interface UsePostGeneratorReturn {
@@ -24,11 +30,12 @@ interface UsePostGeneratorReturn {
   error: string | null
   versions: PostVersion[]
   currentIndex: number
+  source: SourceInfo | null
   generate: (params: GenerateParams) => Promise<void>
   refine: (action: RefineAction) => Promise<void>
   goToVersion: (index: number) => void
   reset: () => void
-  loadContent: (content: string) => void
+  loadContent: (content: string, source?: SourceInfo) => void
 }
 
 const REFINE_PROMPTS: Record<RefineAction, string> = {
@@ -46,22 +53,36 @@ export function usePostGenerator(): UsePostGeneratorReturn {
   const [error, setError] = useState<string | null>(null)
 
   const output = currentIndex >= 0 && versions[currentIndex] ? versions[currentIndex].content : ''
+  const source = currentIndex >= 0 && versions[currentIndex] ? versions[currentIndex].source || null : null
 
-  const addVersion = useCallback((content: string, action: 'generate' | RefineAction) => {
+  const addVersion = useCallback((content: string, action: 'generate' | RefineAction, sourceInfo?: SourceInfo) => {
     const newVersion: PostVersion = {
       id: crypto.randomUUID(),
       content,
       timestamp: new Date(),
       action,
+      source: sourceInfo,
     }
     setVersions(prev => [...prev, newVersion])
     setCurrentIndex(prev => prev + 1)
   }, [])
 
-  const generate = useCallback(async ({ topic, tone, style }: GenerateParams) => {
-    if (!topic.trim()) {
+  const generate = useCallback(async ({ mode, topic, url, tone, style, language }: GenerateParams) => {
+    if (mode === 'topic' && !topic.trim()) {
       setError('Bitte gib ein Thema ein.')
       return
+    }
+    if (mode === 'url' && !url.trim()) {
+      setError('Bitte gib eine URL ein.')
+      return
+    }
+    if (mode === 'url') {
+      try {
+        new URL(url)
+      } catch {
+        setError('Bitte gib eine gültige URL ein.')
+        return
+      }
     }
 
     setLoading(true)
@@ -73,7 +94,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, tone, style }),
+        body: JSON.stringify({ mode, topic, url, tone, style, language }),
       })
 
       if (!res.ok) {
@@ -82,12 +103,14 @@ export function usePostGenerator(): UsePostGeneratorReturn {
 
       const data = await res.json()
       const content = data.output || 'Keine Antwort erhalten.'
+      const sourceInfo: SourceInfo | undefined = data.source
 
       const newVersion: PostVersion = {
         id: crypto.randomUUID(),
         content,
         timestamp: new Date(),
         action: 'generate',
+        source: sourceInfo,
       }
       setVersions([newVersion])
       setCurrentIndex(0)
@@ -113,7 +136,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: prompt, tone: 'professional', style: 'story' }),
+        body: JSON.stringify({ mode: 'topic', topic: prompt, url: '', tone: 'professional', style: 'story' }),
       })
 
       if (!res.ok) {
@@ -122,13 +145,13 @@ export function usePostGenerator(): UsePostGeneratorReturn {
 
       const data = await res.json()
       const content = data.output || 'Keine Antwort erhalten.'
-      addVersion(content, action)
+      addVersion(content, action, source || undefined)
     } catch {
       setError('Fehler bei der Bearbeitung. Bitte versuche es erneut.')
     } finally {
       setRefining(null)
     }
-  }, [output, addVersion])
+  }, [output, source, addVersion])
 
   const goToVersion = useCallback((index: number) => {
     if (index >= 0 && index < versions.length) {
@@ -142,12 +165,13 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     setError(null)
   }, [])
 
-  const loadContent = useCallback((content: string) => {
+  const loadContent = useCallback((content: string, sourceInfo?: SourceInfo) => {
     const newVersion: PostVersion = {
       id: crypto.randomUUID(),
       content,
       timestamp: new Date(),
       action: 'generate',
+      source: sourceInfo,
     }
     setVersions([newVersion])
     setCurrentIndex(0)
@@ -161,6 +185,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     error,
     versions,
     currentIndex,
+    source,
     generate,
     refine,
     goToVersion,

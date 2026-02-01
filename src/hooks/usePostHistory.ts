@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { HistoryItem } from '../types/history'
-import type { Tone, Style } from './usePostGenerator'
+import type { HistoryItem, InputMode, SourceInfo } from '../types/history'
+import type { Tone, Style, Language } from './usePostGenerator'
 
 const STORAGE_KEY = 'linkedin-post-history'
 const MAX_ENTRIES = 50
@@ -9,7 +9,13 @@ function loadFromStorage(): HistoryItem[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
-      return JSON.parse(stored)
+      const items = JSON.parse(stored) as HistoryItem[]
+      // Migration: add default mode and language for old entries
+      return items.map(item => ({
+        ...item,
+        mode: item.mode || 'topic',
+        language: item.language || 'de',
+      }))
     }
   } catch {
     console.error('Failed to load history from localStorage')
@@ -33,16 +39,24 @@ export function usePostHistory() {
   }, [history])
 
   const addToHistory = useCallback((item: {
+    mode: InputMode
     topic: string
+    url?: string
+    source?: SourceInfo
     tone: Tone
     style: Style
+    language: Language
     content: string
   }) => {
     const newItem: HistoryItem = {
       id: crypto.randomUUID(),
+      mode: item.mode,
       topic: item.topic,
+      url: item.url,
+      source: item.source,
       tone: item.tone,
       style: item.style,
+      language: item.language,
       content: item.content,
       createdAt: new Date().toISOString(),
       charCount: item.content.length,

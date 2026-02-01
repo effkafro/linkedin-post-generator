@@ -1,14 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
-import { usePostGenerator, type Tone, type Style, type RefineAction } from '../hooks/usePostGenerator'
+import { usePostGenerator, type Tone, type Style, type Language, type RefineAction } from '../hooks/usePostGenerator'
+import type { InputMode, SourceInfo } from '../types/history'
 
 export interface PostGeneratorProps {
   initialState?: {
+    mode: InputMode
     topic: string
+    url?: string
+    source?: SourceInfo
     tone: Tone
     style: Style
+    language: Language
     content: string
   }
-  onPostGenerated?: (data: { topic: string; tone: Tone; style: Style; content: string }) => void
+  onPostGenerated?: (data: {
+    mode: InputMode
+    topic: string
+    url?: string
+    source?: SourceInfo
+    tone: Tone
+    style: Style
+    language: Language
+    content: string
+  }) => void
 }
 
 const TONE_OPTIONS: { value: Tone; label: string }[] = [
@@ -25,6 +39,14 @@ const STYLE_OPTIONS: { value: Style; label: string }[] = [
   { value: 'bold-statement', label: 'Bold-Statement' },
 ]
 
+const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
+  { value: 'de', label: 'Deutsch' },
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+  { value: 'es', label: 'Español' },
+  { value: 'it', label: 'Italiano' },
+]
+
 const REFINE_OPTIONS: { action: RefineAction; label: string }[] = [
   { action: 'shorter', label: 'Kürzer' },
   { action: 'longer', label: 'Länger' },
@@ -32,10 +54,18 @@ const REFINE_OPTIONS: { action: RefineAction; label: string }[] = [
   { action: 'casual', label: 'Lockerer' },
 ]
 
+const MODE_TABS: { value: InputMode; label: string }[] = [
+  { value: 'topic', label: 'Thema' },
+  { value: 'url', label: 'URL' },
+]
+
 export default function PostGenerator({ initialState, onPostGenerated }: PostGeneratorProps) {
+  const [mode, setMode] = useState<InputMode>(initialState?.mode ?? 'topic')
   const [topic, setTopic] = useState(initialState?.topic ?? '')
+  const [url, setUrl] = useState(initialState?.url ?? '')
   const [tone, setTone] = useState<Tone>(initialState?.tone ?? 'professional')
   const [style, setStyle] = useState<Style>(initialState?.style ?? 'story')
+  const [language, setLanguage] = useState<Language>(initialState?.language ?? 'de')
   const [copied, setCopied] = useState(false)
 
   const {
@@ -45,6 +75,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
     error,
     versions,
     currentIndex,
+    source,
     generate,
     refine,
     goToVersion,
@@ -60,16 +91,19 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
   useEffect(() => {
     if (initialState) {
       isRestoringRef.current = true
+      setMode(initialState.mode)
       setTopic(initialState.topic)
+      setUrl(initialState.url ?? '')
       setTone(initialState.tone)
       setStyle(initialState.style)
-      loadContent(initialState.content)
+      setLanguage(initialState.language ?? 'de')
+      loadContent(initialState.content, initialState.source)
     }
   }, [initialState, loadContent])
 
   const handleGenerate = async () => {
     isRestoringRef.current = false
-    await generate({ topic, tone, style })
+    await generate({ mode, topic, url, tone, style, language })
   }
 
   // Trigger callback when a new post is generated (not restored)
@@ -83,10 +117,19 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
         lastSavedVersionIdRef.current !== latestVersion.id
       ) {
         lastSavedVersionIdRef.current = latestVersion.id
-        onPostGenerated({ topic, tone, style, content: output })
+        onPostGenerated({
+          mode,
+          topic,
+          url: mode === 'url' ? url : undefined,
+          source: source ?? undefined,
+          tone,
+          style,
+          language,
+          content: output
+        })
       }
     }
-  }, [output, loading, versions, topic, tone, style, onPostGenerated])
+  }, [output, loading, versions, mode, topic, url, source, tone, style, language, onPostGenerated])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(output)
@@ -95,11 +138,25 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
   }
 
   const handleReset = () => {
+    setMode('topic')
     setTopic('')
+    setUrl('')
     setTone('professional')
     setStyle('story')
+    setLanguage('de')
     reset()
   }
+
+  const isValidUrl = (urlString: string): boolean => {
+    try {
+      new URL(urlString)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const canGenerate = mode === 'topic' ? topic.trim() : (url.trim() && isValidUrl(url))
 
   return (
     <div className="min-h-screen py-12 px-4 transition-colors duration-300">
@@ -117,23 +174,69 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
         {/* Input Card */}
         <div className="bg-card text-card-foreground shadow-sm border border-border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-md">
           <div className="p-6 md:p-8 space-y-6">
-            {/* Topic Textarea */}
-            <div className="space-y-2">
-              <label htmlFor="topic" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Thema
-              </label>
-              <textarea
-                id="topic"
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                placeholder="Worüber möchtest du schreiben? (z.B. 'Die Zukunft von Remote Work')"
-                rows={4}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-all"
-              />
+            {/* Mode Tabs */}
+            <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+              {MODE_TABS.map(tab => (
+                <button
+                  key={tab.value}
+                  onClick={() => setMode(tab.value)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    mode === tab.value
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
+            {/* Topic Textarea (mode=topic) */}
+            {mode === 'topic' && (
+              <div className="space-y-2">
+                <label htmlFor="topic" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Thema
+                </label>
+                <textarea
+                  id="topic"
+                  value={topic}
+                  onChange={e => setTopic(e.target.value)}
+                  placeholder="Worüber möchtest du schreiben? (z.B. 'Die Zukunft von Remote Work')"
+                  rows={4}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-all"
+                />
+              </div>
+            )}
+
+            {/* URL Input (mode=url) */}
+            {mode === 'url' && (
+              <div className="space-y-2">
+                <label htmlFor="url" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Artikel-URL
+                </label>
+                <input
+                  id="url"
+                  type="url"
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  placeholder="https://example.com/blog-artikel"
+                  className={`flex w-full h-10 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all ${
+                    url && !isValidUrl(url)
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : 'border-input'
+                  }`}
+                />
+                {url && !isValidUrl(url) && (
+                  <p className="text-xs text-destructive">Bitte gib eine gültige URL ein (z.B. https://...)</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Füge eine Blog- oder Artikel-URL ein, um den Inhalt als LinkedIn-Post aufzubereiten.
+                </p>
+              </div>
+            )}
+
             {/* Dropdowns Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label htmlFor="tone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   Tonfall
@@ -179,12 +282,35 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <label htmlFor="language" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Sprache
+                </label>
+                <div className="relative">
+                  <select
+                    id="language"
+                    value={language}
+                    onChange={e => setLanguage(e.target.value as Language)}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all cursor-pointer"
+                  >
+                    {LANGUAGE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Generate Button */}
             <button
               onClick={handleGenerate}
-              disabled={loading || !topic.trim()}
+              disabled={loading || !canGenerate}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 w-full shadow-md"
             >
               {loading ? (
@@ -195,7 +321,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                   </span>
-                  Generiere Post...
+                  {mode === 'url' ? 'Lade Artikel...' : 'Generiere Post...'}
                 </>
               ) : (
                 'Post Generieren'
@@ -254,6 +380,26 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                   <p className="whitespace-pre-wrap leading-relaxed text-base">{output}</p>
                 </div>
               </div>
+
+              {/* Source Badge (URL Mode) */}
+              {source && (
+                <div className="px-6 py-3 bg-muted/50 border-t border-border">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <span>Basierend auf:</span>
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline truncate max-w-xs"
+                    >
+                      {source.title}
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {/* Metada & Actions footer */}
               <div className="bg-muted/30 px-6 py-4 border-t border-border flex flex-col gap-4">

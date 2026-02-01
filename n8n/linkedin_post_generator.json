@@ -22,12 +22,75 @@
     },
     {
       "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.mode }}",
+                    "rightValue": "url",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "URL Mode"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.mode }}",
+                    "rightValue": "topic",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Topic Mode"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "switch-mode",
+      "name": "Switch Mode"
+    },
+    {
+      "parameters": {
         "promptType": "define",
-        "text": "=Generiere einen LinkedIn-Post zum folgenden Thema:\n\n**Thema:** {{ $json.body.topic }}\n**Ton:** {{ $json.body.tone }}\n**Stil:** {{ $json.body.style }}",
+        "text": "=Generiere einen LinkedIn-Post zum folgenden Thema:\n\n**Thema:** {{ $json.body.topic }}\n**Ton:** {{ $json.body.tone }}\n**Stil:** {{ $json.body.style }}\n**Sprache:** {{ $json.body.language }}",
         "messages": {
           "messageValues": [
             {
-              "message": "Du bist ein erfahrener LinkedIn-Copywriter mit 10+ Jahren Erfahrung im Personal Branding und Content Marketing.\n\n## DEINE AUFGABE\nGeneriere einen LinkedIn-Post basierend auf dem gegebenen Thema, Ton und Stil.\n\n## FORMAT-REGELN\n1. **Länge:** 800-1500 Zeichen (optimal für LinkedIn-Algorithmus)\n2. **Hook:** Die erste Zeile MUSS Aufmerksamkeit erregen (erscheint im Feed)\n3. **Struktur:** Nutze Absätze und Leerzeilen für Lesbarkeit\n4. **Emojis:** Sparsam einsetzen (max. 3-5 pro Post)\n5. **Hashtags:** Exakt 3-5 relevante Hashtags am Ende\n6. **CTA:** Schließe mit einer Frage oder Aufforderung zur Interaktion\n\n## TON-ANPASSUNG\n- **professional:** Faktenbasiert, Branchenjargon erlaubt, keine Slang-Ausdrücke\n- **casual:** Persönlich, \"Ich\"-Perspektive, authentische Sprache\n- **inspirational:** Emotionale Trigger, Metaphern, empowernde Sprache\n- **educational:** Klar strukturiert, Bullet Points erlaubt, Mehrwert-fokussiert\n\n## STIL-ANPASSUNG\n- **story:** \"Als ich vor X Jahren...\" oder \"Letzte Woche ist mir etwas passiert...\"\n- **listicle:** \"5 Dinge, die ich über X gelernt habe:\" (dann nummerierte Liste)\n- **question-hook:** \"Was wäre, wenn...?\" oder \"Hast du dich jemals gefragt...?\"\n- **bold-statement:** \"X ist tot.\" oder \"Vergiss alles, was du über X weißt.\"\n\n## OUTPUT\nGib NUR den fertigen LinkedIn-Post aus. Keine Erklärungen, keine Einleitung."
+              "message": "Du bist ein erfahrener LinkedIn-Copywriter mit 10+ Jahren Erfahrung im Personal Branding und Content Marketing.\n\n## DEINE AUFGABE\nGeneriere einen LinkedIn-Post basierend auf dem gegebenen Thema, Ton und Stil. Schreibe den Post in der angegebenen Sprache.\n\n## SPRACHE\n- **de:** Deutsch\n- **en:** English\n- **fr:** Français\n- **es:** Español\n- **it:** Italiano\n\n## FORMAT-REGELN\n1. **Länge:** 800-1500 Zeichen (optimal für LinkedIn-Algorithmus)\n2. **Hook:** Die erste Zeile MUSS Aufmerksamkeit erregen (erscheint im Feed)\n3. **Struktur:** Nutze Absätze und Leerzeilen für Lesbarkeit\n4. **Emojis:** Sparsam einsetzen (max. 3-5 pro Post)\n5. **Hashtags:** Exakt 3-5 relevante Hashtags am Ende\n6. **CTA:** Schließe mit einer Frage oder Aufforderung zur Interaktion\n\n## TON-ANPASSUNG\n- **professional:** Faktenbasiert, Branchenjargon erlaubt, keine Slang-Ausdrücke\n- **casual:** Persönlich, \"Ich\"-Perspektive, authentische Sprache\n- **inspirational:** Emotionale Trigger, Metaphern, empowernde Sprache\n- **educational:** Klar strukturiert, Bullet Points erlaubt, Mehrwert-fokussiert\n\n## STIL-ANPASSUNG\n- **story:** \"Als ich vor X Jahren...\" oder \"Letzte Woche ist mir etwas passiert...\"\n- **listicle:** \"5 Dinge, die ich über X gelernt habe:\" (dann nummerierte Liste)\n- **question-hook:** \"Was wäre, wenn...?\" oder \"Hast du dich jemals gefragt...?\"\n- **bold-statement:** \"X ist tot.\" oder \"Vergiss alles, was du über X weißt.\"\n\n## OUTPUT\nGib NUR den fertigen LinkedIn-Post aus. Keine Erklärungen, keine Einleitung."
             }
           ]
         },
@@ -36,11 +99,103 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        100,
-        0
+        300,
+        200
       ],
-      "id": "chain-llm-linkedin",
-      "name": "Chain LLM"
+      "id": "chain-llm-topic",
+      "name": "Chain LLM (Topic)"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        -200
+      ],
+      "id": "http-fetch-url",
+      "name": "Fetch URL"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "title, h1, meta[property=\"og:title\"]",
+              "returnValue": "text"
+            },
+            {
+              "key": "content",
+              "cssSelector": "article, main, .post-content, .article-content, .entry-content, .content",
+              "returnValue": "text"
+            },
+            {
+              "key": "metaDescription",
+              "cssSelector": "meta[name=\"description\"], meta[property=\"og:description\"]",
+              "returnValue": "attribute",
+              "attribute": "content"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        -200
+      ],
+      "id": "html-extract",
+      "name": "Extract HTML"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"title\": {{ JSON.stringify($json.title || 'Artikel') }},\n  \"content\": {{ JSON.stringify(($json.content || $json.metaDescription || '').substring(0, 3000)) }},\n  \"excerpt\": {{ JSON.stringify(($json.content || $json.metaDescription || '').substring(0, 200)) }},\n  \"url\": {{ JSON.stringify($('Webhook').item.json.body.url) }},\n  \"tone\": {{ JSON.stringify($('Webhook').item.json.body.tone) }},\n  \"style\": {{ JSON.stringify($('Webhook').item.json.body.style) }},\n  \"language\": {{ JSON.stringify($('Webhook').item.json.body.language || 'de') }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        600,
+        -200
+      ],
+      "id": "set-article-data",
+      "name": "Set Article Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Erstelle einen LinkedIn-Post basierend auf diesem Artikel:\n\n**Titel:** {{ $json.title }}\n**URL:** {{ $json.url }}\n**Artikel-Inhalt:**\n{{ $json.content }}\n\n**Gewünschter Ton:** {{ $json.tone }}\n**Gewünschter Stil:** {{ $json.style }}\n**Sprache:** {{ $json.language }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Du bist ein erfahrener LinkedIn-Copywriter mit 10+ Jahren Erfahrung im Personal Branding und Content Marketing.\n\n## DEINE AUFGABE\nFasse den gegebenen Artikel als LinkedIn-Post zusammen. Extrahiere die Kernaussagen und präsentiere sie als wertvollen LinkedIn-Content. Schreibe den Post in der angegebenen Sprache.\n\n## SPRACHE\n- **de:** Deutsch\n- **en:** English\n- **fr:** Français\n- **es:** Español\n- **it:** Italiano\n\n## FORMAT-REGELN\n1. **Länge:** 800-1500 Zeichen (optimal für LinkedIn-Algorithmus)\n2. **Hook:** Die erste Zeile MUSS Aufmerksamkeit erregen (erscheint im Feed)\n3. **Struktur:** Nutze Absätze und Leerzeilen für Lesbarkeit\n4. **Emojis:** Sparsam einsetzen (max. 3-5 pro Post)\n5. **Hashtags:** Exakt 3-5 relevante Hashtags am Ende\n6. **CTA:** Schließe mit einer Frage oder Aufforderung zur Interaktion\n7. **Quelle:** Erwähne NICHT die Quelle/URL im Post selbst\n\n## TON-ANPASSUNG\n- **professional:** Faktenbasiert, Branchenjargon erlaubt, keine Slang-Ausdrücke\n- **casual:** Persönlich, \"Ich\"-Perspektive, authentische Sprache\n- **inspirational:** Emotionale Trigger, Metaphern, empowernde Sprache\n- **educational:** Klar strukturiert, Bullet Points erlaubt, Mehrwert-fokussiert\n\n## STIL-ANPASSUNG\n- **story:** \"Als ich vor X Jahren...\" oder \"Letzte Woche ist mir etwas passiert...\"\n- **listicle:** \"5 Dinge, die ich über X gelernt habe:\" (dann nummerierte Liste)\n- **question-hook:** \"Was wäre, wenn...?\" oder \"Hast du dich jemals gefragt...?\"\n- **bold-statement:** \"X ist tot.\" oder \"Vergiss alles, was du über X weißt.\"\n\n## OUTPUT\nGib NUR den fertigen LinkedIn-Post aus. Keine Erklärungen, keine Einleitung."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        800,
+        -200
+      ],
+      "id": "chain-llm-url",
+      "name": "Chain LLM (URL)"
     },
     {
       "parameters": {
@@ -56,11 +211,37 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        100,
-        200
+        300,
+        400
       ],
-      "id": "openrouter-model",
-      "name": "OpenRouter Chat Model",
+      "id": "openrouter-model-topic",
+      "name": "OpenRouter (Topic)",
+      "credentials": {
+        "openRouterApi": {
+          "id": "43wsCq61oWf2FXhh",
+          "name": "OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "anthropic/claude-3.5-sonnet"
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "id": "openrouter-model-url",
+      "name": "OpenRouter (URL)",
       "credentials": {
         "openRouterApi": {
           "id": "43wsCq61oWf2FXhh",
@@ -71,27 +252,57 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"output\": $('Chain LLM').item.json.text } }}",
+        "responseBody": "={{ { \"output\": $('Chain LLM (Topic)').item.json.text } }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        400,
-        0
+        600,
+        200
       ],
-      "id": "respond-webhook",
-      "name": "Respond to Webhook"
+      "id": "respond-topic",
+      "name": "Respond (Topic)"
     },
     {
       "parameters": {
-        "content": "## LinkedIn Post Generator\n\nGeneriert professionelle LinkedIn-Posts basierend auf:\n- **Thema:** Freier Text\n- **Ton:** professional | casual | inspirational | educational\n- **Stil:** story | listicle | question-hook | bold-statement",
-        "height": 180,
-        "width": 700
+        "respondWith": "json",
+        "responseBody": "={\n  \"output\": {{ JSON.stringify($('Chain LLM (URL)').item.json.text) }},\n  \"source\": {\n    \"title\": {{ JSON.stringify($('Set Article Data').item.json.title) }},\n    \"excerpt\": {{ JSON.stringify($('Set Article Data').item.json.excerpt) }},\n    \"url\": {{ JSON.stringify($('Set Article Data').item.json.url) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        -200
+      ],
+      "id": "respond-url",
+      "name": "Respond (URL)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"output\": $('Chain LLM (Topic)').item.json.text } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        600,
+        400
+      ],
+      "id": "respond-fallback",
+      "name": "Respond (Fallback)"
+    },
+    {
+      "parameters": {
+        "content": "## LinkedIn Post Generator\n\nGeneriert professionelle LinkedIn-Posts basierend auf:\n- **Mode:** topic | url\n- **Topic:** Freier Text (bei mode=topic)\n- **URL:** Blog/Artikel-URL (bei mode=url)\n- **Ton:** professional | casual | inspirational | educational\n- **Stil:** story | listicle | question-hook | bold-statement\n\n### URL Mode\nBei mode=url wird die URL gescrapt und der Artikel-Inhalt als Basis für den Post verwendet.",
+        "height": 240,
+        "width": 400
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -300,
+        -400,
         -150
       ],
       "typeVersion": 1,
@@ -105,29 +316,109 @@
       "main": [
         [
           {
-            "node": "Chain LLM",
+            "node": "Switch Mode",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Chain LLM": {
+    "Switch Mode": {
       "main": [
         [
           {
-            "node": "Respond to Webhook",
+            "node": "Fetch URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chain LLM (Topic)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chain LLM (Topic)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenRouter Chat Model": {
+    "Chain LLM (Topic)": {
+      "main": [
+        [
+          {
+            "node": "Respond (Topic)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch URL": {
+      "main": [
+        [
+          {
+            "node": "Extract HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract HTML": {
+      "main": [
+        [
+          {
+            "node": "Set Article Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Article Data": {
+      "main": [
+        [
+          {
+            "node": "Chain LLM (URL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chain LLM (URL)": {
+      "main": [
+        [
+          {
+            "node": "Respond (URL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter (Topic)": {
       "ai_languageModel": [
         [
           {
-            "node": "Chain LLM",
+            "node": "Chain LLM (Topic)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter (URL)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chain LLM (URL)",
             "type": "ai_languageModel",
             "index": 0
           }

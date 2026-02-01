@@ -29,7 +29,8 @@ Webhook (POST) → Chain LLM → Respond to Webhook
 {
   "topic": "Das Thema des LinkedIn Posts (Pflichtfeld)",
   "tone": "professional | casual | inspirational | educational",
-  "style": "story | listicle | question-hook | bold-statement"
+  "style": "story | listicle | question-hook | bold-statement",
+  "language": "de | en | fr | es | it"
 }
 ```
 
@@ -81,6 +82,19 @@ Webhook (POST) → Chain LLM → Respond to Webhook
   | listicle | Listicle | Nummerierte Liste mit Key Points |
   | question-hook | Question-Hook | Startet mit provokanter Frage |
   | bold-statement | Bold-Statement | Startet mit mutiger These/Aussage |
+
+### 4. Sprache (language)
+- **Typ:** Dropdown/Select
+- **Pflichtfeld:** Ja
+- **Default:** de
+- **Optionen:**
+  | Value | Label | Beschreibung |
+  |-------|-------|--------------|
+  | de | Deutsch | Post wird auf Deutsch generiert |
+  | en | English | Post wird auf Englisch generiert |
+  | fr | Français | Post wird auf Französisch generiert |
+  | es | Español | Post wird auf Spanisch generiert |
+  | it | Italiano | Post wird auf Italienisch generiert |
 
 ---
 
@@ -208,3 +222,127 @@ interface HistoryItem {
 - **empty:** "Noch keine Posts generiert" mit Icon
 - **filled:** Liste der History-Einträge
 - **loading:** Kein spezieller State (synchron via localStorage)
+
+---
+
+## URL → Post Feature
+
+### Übersicht
+Zusätzlich zur manuellen Themeneingabe können Nutzer eine Blog- oder Artikel-URL eingeben. Das System scrapt den Artikel-Inhalt und generiert daraus einen LinkedIn-Post.
+
+### User Flow
+1. User wählt Tab "URL" (statt "Thema")
+2. User gibt Blog-URL ein
+3. System scraped Artikel (Titel, Text)
+4. User sieht Preview: "Gefundener Inhalt: [Titel]..."
+5. User wählt Ton + Stil wie gewohnt
+6. LLM generiert Post basierend auf Artikel-Content
+7. User kann refinen, kopieren, speichern
+
+### UI-Änderungen
+
+#### Tab-Umschalter
+- **Optionen:** "Thema" | "URL"
+- **Position:** Oberhalb des Input-Bereichs
+- **Verhalten:** Wechselt zwischen Topic-Textarea und URL-Input
+- **Erweiterbar:** Später: "YouTube" | "PDF"
+
+#### URL-Input
+- **Typ:** Text-Input mit URL-Validierung
+- **Placeholder:** "https://example.com/blog-artikel"
+- **Validierung:** Muss gültige URL sein (beginnt mit http:// oder https://)
+- **Error-State:** "Bitte gib eine gültige URL ein"
+
+#### Source-Badge (im Output)
+- **Position:** Unterhalb des generierten Posts
+- **Inhalt:** "Basierend auf: [Artikel-Titel]" mit Link zur Original-URL
+- **Nur sichtbar:** Bei mode=url
+
+---
+
+## Webhook-Spezifikation (Erweitert)
+
+### Request-Format (Erweitert)
+```json
+{
+  "mode": "topic | url",           // Art der Eingabe
+  "topic": "Das Thema...",         // Bei mode=topic
+  "url": "https://...",            // Bei mode=url
+  "tone": "professional | casual | inspirational | educational",
+  "style": "story | listicle | question-hook | bold-statement",
+  "language": "de | en | fr | es | it"  // Zielsprache des Posts
+}
+```
+
+### Response-Format (Erweitert)
+```json
+{
+  "output": "Der generierte LinkedIn Post mit Hashtags...",
+  "source": {                      // NEU: Nur bei mode=url
+    "title": "Artikel-Titel",
+    "excerpt": "Erste 200 Zeichen des Artikels...",
+    "url": "https://original-url.com"
+  }
+}
+```
+
+---
+
+## Backend (n8n) - URL Mode
+
+### Workflow-Erweiterung
+```
+Webhook (POST)
+  → Switch (mode == "url" oder "topic")
+    → [topic] Chain LLM (wie bisher)
+    → [url] HTTP Request (URL abrufen)
+             → HTML Extract (Titel + Content)
+             → Set (Daten strukturieren)
+             → Chain LLM (Content → Post)
+  → Respond to Webhook
+```
+
+### Scraping-Strategie
+1. **Primär:** HTML `<article>` Tag oder `main` Element
+2. **Fallback:** Meta-Tags (og:title, og:description)
+3. **Fallback:** `<h1>` + `<p>` Tags
+
+### Angepasster System-Prompt für URL-Mode
+```
+Du bist ein erfahrener LinkedIn-Copywriter. Fasse den folgenden Artikel-Inhalt als LinkedIn-Post zusammen.
+
+## ARTIKEL-INFORMATIONEN
+- Titel: {{ $json.title }}
+- URL: {{ $json.url }}
+- Inhalt: {{ $json.content }}
+
+## AUFGABE
+Erstelle einen LinkedIn-Post, der die Kernaussagen des Artikels zusammenfasst und für LinkedIn-Engagement optimiert ist.
+
+[Rest der FORMAT-REGELN wie beim Topic-Mode]
+```
+
+---
+
+## Datenstruktur (Erweitert)
+
+### HistoryItem (Erweitert)
+```typescript
+interface HistoryItem {
+  id: string
+  mode: 'topic' | 'url'
+  topic: string                 // Bei mode=topic
+  url?: string                  // Bei mode=url
+  source?: {                    // Bei mode=url
+    title: string
+    excerpt: string
+    url: string
+  }
+  tone: Tone
+  style: Style
+  language: Language            // Zielsprache (de, en, fr, es, it)
+  content: string
+  createdAt: string
+  charCount: number
+}
+```

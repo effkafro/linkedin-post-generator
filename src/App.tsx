@@ -5,8 +5,8 @@ import { ModeToggle } from './components/mode-toggle'
 import Sidebar from './components/Sidebar'
 import PostHistory from './components/PostHistory'
 import { usePostHistory } from './hooks/usePostHistory'
-import type { HistoryItem } from './types/history'
-import type { Tone, Style } from './hooks/usePostGenerator'
+import type { HistoryItem, InputMode, SourceInfo } from './types/history'
+import type { Tone, Style, Language } from './hooks/usePostGenerator'
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -18,7 +18,16 @@ export default function App() {
     setSidebarOpen(false)
   }, [])
 
-  const handlePostGenerated = useCallback((data: { topic: string; tone: Tone; style: Style; content: string }) => {
+  const handlePostGenerated = useCallback((data: {
+    mode: InputMode
+    topic: string
+    url?: string
+    source?: SourceInfo
+    tone: Tone
+    style: Style
+    language: Language
+    content: string
+  }) => {
     addToHistory(data)
     // Clear selection after generating a new post
     setSelectedHistoryItem(null)
@@ -26,9 +35,13 @@ export default function App() {
 
   const initialState = selectedHistoryItem
     ? {
+        mode: selectedHistoryItem.mode,
         topic: selectedHistoryItem.topic,
+        url: selectedHistoryItem.url,
+        source: selectedHistoryItem.source,
         tone: selectedHistoryItem.tone,
         style: selectedHistoryItem.style,
+        language: selectedHistoryItem.language,
         content: selectedHistoryItem.content,
       }
     : undefined

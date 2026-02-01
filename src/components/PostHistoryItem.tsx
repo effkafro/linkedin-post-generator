@@ -37,6 +37,11 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
     onDelete(item.id)
   }
 
+  // Display title: for URL mode show source title or URL, for topic mode show topic
+  const displayTitle = item.mode === 'url'
+    ? (item.source?.title || item.url || 'URL')
+    : item.topic
+
   return (
     <div
       onClick={() => onSelect(item)}
@@ -44,9 +49,16 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-medium text-foreground truncate">
-            {truncateText(item.topic, 40)}
-          </h4>
+          <div className="flex items-center gap-2">
+            {item.mode === 'url' && (
+              <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary rounded">
+                URL
+              </span>
+            )}
+            <h4 className="text-sm font-medium text-foreground truncate">
+              {truncateText(displayTitle, 40)}
+            </h4>
+          </div>
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
             {truncateText(item.content, 80)}
           </p>
