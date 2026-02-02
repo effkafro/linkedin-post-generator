@@ -119,6 +119,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
   const [copied, setCopied] = useState(false)
   const [showToneHelp, setShowToneHelp] = useState(false)
   const [showStyleHelp, setShowStyleHelp] = useState(false)
+  const [customRefineText, setCustomRefineText] = useState('')
 
   const {
     output,
@@ -838,6 +839,44 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                       {label}
                     </button>
                   ))}
+                </div>
+
+                {/* Custom Refine Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customRefineText}
+                    onChange={(e) => setCustomRefineText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customRefineText.trim() && !refining && !loading) {
+                        refine('custom', customRefineText)
+                        setCustomRefineText('')
+                      }
+                    }}
+                    placeholder="z.B. Mehr Emojis hinzufügen..."
+                    disabled={!!refining || loading}
+                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                  />
+                  <button
+                    onClick={() => {
+                      if (customRefineText.trim()) {
+                        refine('custom', customRefineText)
+                        setCustomRefineText('')
+                      }
+                    }}
+                    disabled={!customRefineText.trim() || !!refining || loading}
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4"
+                  >
+                    {refining === 'custom' ? (
+                      <span className="animate-spin mr-1">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </span>
+                    ) : null}
+                    Anpassen
+                  </button>
                 </div>
 
                 {/* Primary Actions */}

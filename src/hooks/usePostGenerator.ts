@@ -4,7 +4,7 @@ import type { InputMode, SourceInfo, JobConfig } from '../types/history'
 export type Tone = 'professional' | 'casual' | 'inspirational' | 'educational'
 export type Style = 'story' | 'listicle' | 'question-hook' | 'bold-statement'
 export type Language = 'de' | 'en' | 'fr' | 'es' | 'it'
-export type RefineAction = 'shorter' | 'longer' | 'formal' | 'casual'
+export type RefineAction = 'shorter' | 'longer' | 'formal' | 'casual' | 'custom'
 export type JobSubStyle = 'wir-suchen' | 'kennt-jemanden' | 'persoenlich' | 'opportunity'
 export type CandidatePersona = 'junior' | 'senior' | 'c-level' | 'freelancer'
 export type Industry = 'tech' | 'finance' | 'healthcare' | 'marketing' | 'hr' | 'legal' | 'other'
@@ -36,13 +36,13 @@ interface UsePostGeneratorReturn {
   currentIndex: number
   source: SourceInfo | null
   generate: (params: GenerateParams) => Promise<void>
-  refine: (action: RefineAction) => Promise<void>
+  refine: (action: RefineAction, customInstruction?: string) => Promise<void>
   goToVersion: (index: number) => void
   reset: () => void
   loadContent: (content: string, source?: SourceInfo) => void
 }
 
-const REFINE_PROMPTS: Record<RefineAction, string> = {
+const REFINE_PROMPTS: Record<Exclude<RefineAction, 'custom'>, string> = {
   shorter: "Kürze diesen LinkedIn-Post auf maximal 800 Zeichen. Behalte den Kern der Aussage:",
   longer: "Erweitere diesen LinkedIn-Post mit mehr Details und Beispielen (max 1800 Zeichen):",
   formal: "Formuliere diesen LinkedIn-Post professioneller und formeller um:",
@@ -135,16 +135,23 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     }
   }, [])
 
-  const refine = useCallback(async (action: RefineAction) => {
+  const refine = useCallback(async (action: RefineAction, customInstruction?: string) => {
     if (!output) {
       setError('Kein Post zum Bearbeiten vorhanden.')
+      return
+    }
+
+    if (action === 'custom' && !customInstruction?.trim()) {
+      setError('Bitte gib eine Anweisung ein.')
       return
     }
 
     setRefining(action)
     setError(null)
 
-    const prompt = `${REFINE_PROMPTS[action]}\n\n${output}`
+    const prompt = action === 'custom'
+      ? `Überarbeite diesen LinkedIn-Post nach folgender Anweisung:\n\nANWEISUNG: ${customInstruction}\n\nPOST:\n${output}`
+      : `${REFINE_PROMPTS[action]}\n\n${output}`
 
     try {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {

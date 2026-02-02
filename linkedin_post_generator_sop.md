@@ -609,3 +609,52 @@ interface AuthContextType {
 | pro | unlimited |
 | team | unlimited |
 | agency | unlimited |
+
+---
+
+## Custom Refine Feature
+
+### Übersicht
+Neben den vordefinierten Refine-Optionen (Kürzer, Länger, Formeller, Lockerer) können Nutzer eigene Anweisungen eingeben, um den generierten Post anzupassen.
+
+### User Flow
+1. User generiert einen Post
+2. User sieht Refine-Buttons und darunter ein Freitextfeld
+3. User gibt eigene Anweisung ein (z.B. "Mehr Emojis hinzufügen")
+4. User klickt "Anpassen" oder drückt Enter
+5. System überarbeitet den Post nach der Anweisung
+6. Neue Version erscheint in der Version-History
+
+### UI-Komponenten
+
+#### Custom Refine Input
+- **Position:** Unterhalb der Refine-Buttons
+- **Elemente:** Textfeld + "Anpassen"-Button
+- **Placeholder:** "z.B. Mehr Emojis hinzufügen..."
+- **Tastaturkürzel:** Enter sendet ab
+- **Nach Erfolg:** Textfeld wird geleert
+
+### Backend-Logik
+
+#### Erweiterter RefineAction Typ
+```typescript
+type RefineAction = 'shorter' | 'longer' | 'formal' | 'casual' | 'custom'
+```
+
+#### Custom Refine Prompt
+```
+Überarbeite diesen LinkedIn-Post nach folgender Anweisung:
+
+ANWEISUNG: {{ customInstruction }}
+
+POST:
+{{ currentPost }}
+```
+
+### Beispiele für Custom-Anweisungen
+- "Füge mehr Emojis hinzu"
+- "Mache den Hook provokanter"
+- "Entferne alle Hashtags"
+- "Schreibe es aus der Wir-Perspektive"
+- "Füge einen Call-to-Action am Ende hinzu"
+- "Kürze auf maximal 500 Zeichen"
