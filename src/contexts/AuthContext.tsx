@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import type { User, Session, AuthError } from '@supabase/supabase-js'
+import { AuthError } from '@supabase/supabase-js'
+import type { User, Session } from '@supabase/supabase-js'
 import type { Plan } from '../types/database'
 
 interface Profile {
@@ -92,9 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [fetchProfile])
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
-      return { error: { message: 'Supabase not configured' } as AuthError }
+      return { error: new AuthError('Supabase not configured') }
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -105,9 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string, fullName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName?: string): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
-      return { error: { message: 'Supabase not configured' } as AuthError }
+      return { error: new AuthError('Supabase not configured') }
     }
 
     const { error } = await supabase.auth.signUp({
@@ -123,9 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error }
   }, [])
 
-  const signInWithOAuth = useCallback(async (provider: 'google' | 'linkedin_oidc') => {
+  const signInWithOAuth = useCallback(async (provider: 'google' | 'linkedin_oidc'): Promise<{ error: AuthError | null }> => {
     if (!supabase) {
-      return { error: { message: 'Supabase not configured' } as AuthError }
+      return { error: new AuthError('Supabase not configured') }
     }
 
     const { error } = await supabase.auth.signInWithOAuth({

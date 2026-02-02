@@ -36,7 +36,7 @@ interface UsePostGeneratorReturn {
   currentIndex: number
   source: SourceInfo | null
   generate: (params: GenerateParams) => Promise<void>
-  refine: (action: RefineAction, customInstruction?: string) => Promise<void>
+  refine: (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => Promise<void>
   goToVersion: (index: number) => void
   reset: () => void
   loadContent: (content: string, source?: SourceInfo) => void
@@ -116,8 +116,21 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       }
 
       const data = await res.json()
-      const content = data.output || 'Keine Antwort erhalten.'
-      const sourceInfo: SourceInfo | undefined = data.source
+
+      // Validate response structure
+      if (typeof data !== 'object' || data === null) {
+        throw new Error('Invalid response format')
+      }
+
+      const content = typeof data.output === 'string' && data.output.trim()
+        ? data.output
+        : 'Keine Antwort erhalten.'
+
+      // Validate source if present
+      const sourceInfo: SourceInfo | undefined = data.source && typeof data.source === 'object'
+        && typeof data.source.url === 'string' && typeof data.source.title === 'string'
+        ? data.source as SourceInfo
+        : undefined
 
       const newVersion: PostVersion = {
         id: crypto.randomUUID(),
@@ -135,7 +148,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     }
   }, [])
 
-  const refine = useCallback(async (action: RefineAction, customInstruction?: string) => {
+  const refine = useCallback(async (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => {
     if (!output) {
       setError('Kein Post zum Bearbeiten vorhanden.')
       return
@@ -153,11 +166,16 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       ? `Überarbeite diesen LinkedIn-Post nach folgender Anweisung:\n\nANWEISUNG: ${customInstruction}\n\nPOST:\n${output}`
       : `${REFINE_PROMPTS[action]}\n\n${output}`
 
+    // Use provided settings or defaults
+    const tone = settings?.tone ?? 'professional'
+    const style = settings?.style ?? 'story'
+    const language = settings?.language ?? 'de'
+
     try {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'topic', topic: prompt, url: '', tone: 'professional', style: 'story' }),
+        body: JSON.stringify({ mode: 'topic', topic: prompt, url: '', tone, style, language }),
       })
 
       if (!res.ok) {
@@ -165,7 +183,16 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       }
 
       const data = await res.json()
-      const content = data.output || 'Keine Antwort erhalten.'
+
+      // Validate response structure
+      if (typeof data !== 'object' || data === null) {
+        throw new Error('Invalid response format')
+      }
+
+      const content = typeof data.output === 'string' && data.output.trim()
+        ? data.output
+        : 'Keine Antwort erhalten.'
+
       addVersion(content, action, source || undefined)
     } catch {
       setError('Fehler bei der Bearbeitung. Bitte versuche es erneut.')

@@ -6,6 +6,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials not found. Running in localStorage-only mode.')
+  console.log('Missing credentials:', {
+    url: !!supabaseUrl,
+    key: !!supabaseAnonKey,
+  })
 }
 
 function createSupabaseClient(): SupabaseClient<Database> | null {

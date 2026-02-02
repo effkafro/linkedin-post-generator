@@ -22,7 +22,7 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ onLoginClick }: UserMenuProps) {
-  const { user, profile, loading, signOut, isConfigured } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -56,9 +56,7 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
     )
   }
 
-  if (!isConfigured) {
-    return null
-  }
+
 
   if (!user) {
     return (
@@ -130,11 +128,10 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground">Plan</span>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                plan === 'free'
-                  ? 'bg-muted text-muted-foreground'
-                  : 'bg-primary/10 text-primary'
-              }`}>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${plan === 'free'
+                ? 'bg-muted text-muted-foreground'
+                : 'bg-primary/10 text-primary'
+                }`}>
                 {PLAN_LABELS[plan]}
               </span>
             </div>
@@ -147,9 +144,8 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
             {!isUnlimited && (
               <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all ${
-                    postsThisMonth >= limit ? 'bg-destructive' : 'bg-primary'
-                  }`}
+                  className={`h-full transition-all ${postsThisMonth >= limit ? 'bg-destructive' : 'bg-primary'
+                    }`}
                   style={{ width: `${Math.min((postsThisMonth / limit) * 100, 100)}%` }}
                 />
               </div>

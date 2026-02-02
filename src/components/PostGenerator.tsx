@@ -824,7 +824,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                   {REFINE_OPTIONS.map(({ action, label }) => (
                     <button
                       key={action}
-                      onClick={() => refine(action)}
+                      onClick={() => refine(action, undefined, { tone, style, language })}
                       disabled={!!refining || loading}
                       className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
                     >
@@ -849,7 +849,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                     onChange={(e) => setCustomRefineText(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && customRefineText.trim() && !refining && !loading) {
-                        refine('custom', customRefineText)
+                        refine('custom', customRefineText, { tone, style, language })
                         setCustomRefineText('')
                       }
                     }}
@@ -860,7 +860,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                   <button
                     onClick={() => {
                       if (customRefineText.trim()) {
-                        refine('custom', customRefineText)
+                        refine('custom', customRefineText, { tone, style, language })
                         setCustomRefineText('')
                       }
                     }}

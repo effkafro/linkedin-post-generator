@@ -22,11 +22,22 @@ export function useChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chatInput: text, sessionId: sessionId.current }),
       })
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
+      }
+
       const data = await res.json()
+
+      // Validate response structure
+      const responseText = typeof data === 'object' && data !== null && typeof data.output === 'string' && data.output.trim()
+        ? data.output
+        : 'Keine Antwort erhalten.'
+
       const botMsg: Message = {
         id: crypto.randomUUID(),
         role: 'bot',
-        text: data.output || 'Keine Antwort erhalten.',
+        text: responseText,
       }
       setMessages(prev => [...prev, botMsg])
     } catch {

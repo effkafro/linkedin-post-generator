@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import type { HistoryItem, InputMode, SourceInfo, JobConfig } from '../types/history'
 import type { Tone, Style, Language } from './usePostGenerator'
+import type { Database } from '../types/database'
+
+type PostInsert = Database['public']['Tables']['posts']['Insert']
 
 // Simple interface for Supabase post rows (response from DB)
 interface PostRow {
@@ -182,14 +185,14 @@ export function usePostHistory() {
 
     if (itemsToUpload.length === 0) return
 
-    // Upload new items
-    const postsToInsert = itemsToUpload.map(item => ({
+    // Upload new items - convert undefined to null for database compatibility
+    const postsToInsert: PostInsert[] = itemsToUpload.map(item => ({
       user_id: userId,
       mode: item.mode,
-      topic: item.topic,
-      url: item.url,
-      source: item.source,
-      job_config: item.jobConfig,
+      topic: item.topic || null,
+      url: item.url ?? null,
+      source: item.source ?? null,
+      job_config: item.jobConfig ?? null,
       tone: item.tone,
       style: item.style,
       language: item.language,
@@ -198,8 +201,9 @@ export function usePostHistory() {
       created_at: item.createdAt,
     }))
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await client.from('posts').insert(postsToInsert as any)
+    // Type assertion needed due to Supabase client generic inference issue
+    // The postsToInsert type matches PostInsert[] which is the correct insert type
+    const { error } = await client.from('posts').insert(postsToInsert as never[])
 
     if (error) {
       console.error('Error merging local items to cloud:', error)
@@ -245,13 +249,14 @@ export function usePostHistory() {
     // If logged in, save to Supabase
     const client = getClient()
     if (user && client) {
-      const postToInsert = {
+      // Convert undefined to null for database compatibility
+      const postToInsert: PostInsert = {
         user_id: user.id,
         mode: item.mode,
-        topic: item.topic,
-        url: item.url,
-        source: item.source,
-        job_config: item.jobConfig,
+        topic: item.topic || null,
+        url: item.url ?? null,
+        source: item.source ?? null,
+        job_config: item.jobConfig ?? null,
         tone: item.tone,
         style: item.style,
         language: item.language,
@@ -259,15 +264,22 @@ export function usePostHistory() {
         char_count: item.content.length,
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await client.from('posts').insert(postToInsert as any).select().single() as { data: PostRow | null, error: unknown }
+      // Type assertion needed due to Supabase client generic inference issue
+      const { data, error } = await client
+        .from('posts')
+        .insert(postToInsert as never)
+        .select()
+        .single()
 
       if (error) {
         console.error('Error saving post to Supabase:', error)
+        // Rollback optimistic update on error
+        setHistory(prev => prev.filter(h => h.id !== newItem.id))
       } else if (data) {
         // Update the item with the Supabase-generated ID
+        const postData = data as PostRow
         setHistory(prev =>
-          prev.map(h => h.id === newItem.id ? { ...h, id: data.id } : h)
+          prev.map(h => h.id === newItem.id ? { ...h, id: postData.id } : h)
         )
       }
     }
@@ -325,7 +337,7 @@ function hashContent(content: string): string {
   for (let i = 0; i < content.length; i++) {
     const char = content.charCodeAt(i)
     hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32bit integer
+    hash = hash & 0x7fffffff // Convert to positive 32bit integer
   }
   return hash.toString(16)
 }
