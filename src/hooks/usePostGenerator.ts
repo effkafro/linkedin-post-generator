@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react'
-import type { InputMode, SourceInfo } from '../types/history'
+import type { InputMode, SourceInfo, JobConfig } from '../types/history'
 
 export type Tone = 'professional' | 'casual' | 'inspirational' | 'educational'
 export type Style = 'story' | 'listicle' | 'question-hook' | 'bold-statement'
 export type Language = 'de' | 'en' | 'fr' | 'es' | 'it'
 export type RefineAction = 'shorter' | 'longer' | 'formal' | 'casual'
+export type JobSubStyle = 'wir-suchen' | 'kennt-jemanden' | 'persoenlich' | 'opportunity'
+export type CandidatePersona = 'junior' | 'senior' | 'c-level' | 'freelancer'
+export type Industry = 'tech' | 'finance' | 'healthcare' | 'marketing' | 'hr' | 'legal' | 'other'
 
 interface GenerateParams {
   mode: InputMode
@@ -13,6 +16,7 @@ interface GenerateParams {
   tone: Tone
   style: Style
   language: Language
+  jobConfig?: JobConfig
 }
 
 interface PostVersion {
@@ -67,7 +71,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     setCurrentIndex(prev => prev + 1)
   }, [])
 
-  const generate = useCallback(async ({ mode, topic, url, tone, style, language }: GenerateParams) => {
+  const generate = useCallback(async ({ mode, topic, url, tone, style, language, jobConfig }: GenerateParams) => {
     if (mode === 'topic' && !topic.trim()) {
       setError('Bitte gib ein Thema ein.')
       return
@@ -84,6 +88,16 @@ export function usePostGenerator(): UsePostGeneratorReturn {
         return
       }
     }
+    if (mode === 'job') {
+      if (jobConfig?.hasExistingPosting && !jobConfig.jobUrl?.trim()) {
+        setError('Bitte gib die URL zur Stellenausschreibung ein.')
+        return
+      }
+      if (!jobConfig?.hasExistingPosting && !jobConfig?.jobTitle?.trim()) {
+        setError('Bitte gib einen Jobtitel ein.')
+        return
+      }
+    }
 
     setLoading(true)
     setError(null)
@@ -94,7 +108,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode, topic, url, tone, style, language }),
+        body: JSON.stringify({ mode, topic, url, tone, style, language, jobConfig }),
       })
 
       if (!res.ok) {

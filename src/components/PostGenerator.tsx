@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { usePostGenerator, type Tone, type Style, type Language, type RefineAction } from '../hooks/usePostGenerator'
-import type { InputMode, SourceInfo } from '../types/history'
+import { usePostGenerator, type Tone, type Style, type Language, type RefineAction, type JobSubStyle, type CandidatePersona, type Industry } from '../hooks/usePostGenerator'
+import type { InputMode, SourceInfo, JobConfig } from '../types/history'
 
 const TONE_DESCRIPTIONS: Record<Tone, string> = {
   professional: 'Seriös, fachlich, business-orientiert. Branchenjargon erlaubt.',
@@ -16,12 +16,37 @@ const STYLE_DESCRIPTIONS: Record<Style, string> = {
   'bold-statement': 'Startet mit mutiger These. "X ist tot." oder "Vergiss alles über X."',
 }
 
+const JOB_SUB_STYLE_OPTIONS: { value: JobSubStyle; label: string; description: string }[] = [
+  { value: 'wir-suchen', label: 'Wir suchen', description: 'Klassisch, direkt. "Wir suchen ab sofort..."' },
+  { value: 'kennt-jemanden', label: 'Kennt ihr jemanden?', description: 'Netzwerk aktivieren. "Kennt jemand von euch..."' },
+  { value: 'persoenlich', label: 'Persönliche Empfehlung', description: 'Storytelling. "In meinem Team suchen wir..."' },
+  { value: 'opportunity', label: 'Opportunity Pitch', description: 'Benefits-first. "Diese Chance solltest du nicht verpassen..."' },
+]
+
+const CANDIDATE_PERSONA_OPTIONS: { value: CandidatePersona; label: string; description: string }[] = [
+  { value: 'junior', label: 'Junior / Berufseinsteiger', description: 'Mentoring, Lernmöglichkeiten betonen' },
+  { value: 'senior', label: 'Senior / Erfahren', description: 'Verantwortung, technische Challenges betonen' },
+  { value: 'c-level', label: 'C-Level / Management', description: 'Strategie, Leadership, Vision betonen' },
+  { value: 'freelancer', label: 'Freelancer / Consultant', description: 'Projektdetails, Flexibilität betonen' },
+]
+
+const INDUSTRY_OPTIONS: { value: Industry; label: string }[] = [
+  { value: 'tech', label: 'Tech & IT' },
+  { value: 'finance', label: 'Finance & Banking' },
+  { value: 'healthcare', label: 'Healthcare & Pharma' },
+  { value: 'marketing', label: 'Marketing & Creative' },
+  { value: 'hr', label: 'HR & People' },
+  { value: 'legal', label: 'Legal & Compliance' },
+  { value: 'other', label: 'Andere Branche' },
+]
+
 export interface PostGeneratorProps {
   initialState?: {
     mode: InputMode
     topic: string
     url?: string
     source?: SourceInfo
+    jobConfig?: JobConfig
     tone: Tone
     style: Style
     language: Language
@@ -32,6 +57,7 @@ export interface PostGeneratorProps {
     topic: string
     url?: string
     source?: SourceInfo
+    jobConfig?: JobConfig
     tone: Tone
     style: Style
     language: Language
@@ -71,12 +97,22 @@ const REFINE_OPTIONS: { action: RefineAction; label: string }[] = [
 const MODE_TABS: { value: InputMode; label: string }[] = [
   { value: 'topic', label: 'Thema' },
   { value: 'url', label: 'URL' },
+  { value: 'job', label: 'Job' },
 ]
+
+const DEFAULT_JOB_CONFIG: JobConfig = {
+  hasExistingPosting: false,
+  jobSubStyle: 'wir-suchen',
+  candidatePersona: 'senior',
+  industry: 'tech',
+  remoteOption: false,
+}
 
 export default function PostGenerator({ initialState, onPostGenerated }: PostGeneratorProps) {
   const [mode, setMode] = useState<InputMode>(initialState?.mode ?? 'topic')
   const [topic, setTopic] = useState(initialState?.topic ?? '')
   const [url, setUrl] = useState(initialState?.url ?? '')
+  const [jobConfig, setJobConfig] = useState<JobConfig>(initialState?.jobConfig ?? DEFAULT_JOB_CONFIG)
   const [tone, setTone] = useState<Tone>(initialState?.tone ?? 'professional')
   const [style, setStyle] = useState<Style>(initialState?.style ?? 'story')
   const [language, setLanguage] = useState<Language>(initialState?.language ?? 'de')
@@ -110,6 +146,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
       setMode(initialState.mode)
       setTopic(initialState.topic)
       setUrl(initialState.url ?? '')
+      setJobConfig(initialState.jobConfig ?? DEFAULT_JOB_CONFIG)
       setTone(initialState.tone)
       setStyle(initialState.style)
       setLanguage(initialState.language ?? 'de')
@@ -119,8 +156,12 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
 
   const handleGenerate = async () => {
     isRestoringRef.current = false
-    await generate({ mode, topic, url, tone, style, language })
+    await generate({ mode, topic, url, tone, style, language, jobConfig: mode === 'job' ? jobConfig : undefined })
   }
+
+  const updateJobConfig = useCallback((updates: Partial<JobConfig>) => {
+    setJobConfig(prev => ({ ...prev, ...updates }))
+  }, [])
 
   // Trigger callback when a new post is generated (not restored)
   useEffect(() => {
@@ -136,8 +177,9 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
         onPostGenerated({
           mode,
           topic,
-          url: mode === 'url' ? url : undefined,
+          url: mode === 'url' ? url : (mode === 'job' && jobConfig.hasExistingPosting ? jobConfig.jobUrl : undefined),
           source: source ?? undefined,
+          jobConfig: mode === 'job' ? jobConfig : undefined,
           tone,
           style,
           language,
@@ -145,7 +187,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
         })
       }
     }
-  }, [output, loading, versions, mode, topic, url, source, tone, style, language, onPostGenerated])
+  }, [output, loading, versions, mode, topic, url, jobConfig, source, tone, style, language, onPostGenerated])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(output)
@@ -157,6 +199,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
     setMode('topic')
     setTopic('')
     setUrl('')
+    setJobConfig(DEFAULT_JOB_CONFIG)
     setTone('professional')
     setStyle('story')
     setLanguage('de')
@@ -172,7 +215,17 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
     }
   }
 
-  const canGenerate = mode === 'topic' ? topic.trim() : (url.trim() && isValidUrl(url))
+  const canGenerate = (() => {
+    if (mode === 'topic') return !!topic.trim()
+    if (mode === 'url') return url.trim() && isValidUrl(url)
+    if (mode === 'job') {
+      if (jobConfig.hasExistingPosting) {
+        return jobConfig.jobUrl?.trim() && isValidUrl(jobConfig.jobUrl)
+      }
+      return !!jobConfig.jobTitle?.trim()
+    }
+    return false
+  })()
 
   // Close help modals on Escape key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -263,6 +316,240 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                 <p className="text-xs text-muted-foreground">
                   Füge eine Blog- oder Artikel-URL ein, um den Inhalt als LinkedIn-Post aufzubereiten.
                 </p>
+              </div>
+            )}
+
+            {/* Job Input (mode=job) */}
+            {mode === 'job' && (
+              <div className="space-y-6">
+                {/* Has existing posting toggle */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Stellenausschreibung vorhanden?</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateJobConfig({ hasExistingPosting: true })}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        jobConfig.hasExistingPosting
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      Ja, ich habe eine URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateJobConfig({ hasExistingPosting: false })}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        !jobConfig.hasExistingPosting
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      Nein, ich gebe Details ein
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional inputs based on hasExistingPosting */}
+                {jobConfig.hasExistingPosting ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="jobUrl" className="text-sm font-medium">
+                        URL zur Stellenausschreibung
+                      </label>
+                      <input
+                        id="jobUrl"
+                        type="url"
+                        value={jobConfig.jobUrl || ''}
+                        onChange={e => updateJobConfig({ jobUrl: e.target.value })}
+                        placeholder="https://careers.example.com/jobs/123"
+                        className={`flex w-full h-10 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all ${
+                          jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl)
+                            ? 'border-destructive focus-visible:ring-destructive'
+                            : 'border-input'
+                        }`}
+                      />
+                      {jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl) && (
+                        <p className="text-xs text-destructive">Bitte gib eine gültige URL ein</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="jobContext" className="text-sm font-medium">
+                        Zusätzlicher Kontext (optional)
+                      </label>
+                      <textarea
+                        id="jobContext"
+                        value={topic}
+                        onChange={e => setTopic(e.target.value)}
+                        placeholder="z.B. 'Wir haben gerade unser Team verdoppelt' oder 'Diese Stelle ist perfekt für...'"
+                        rows={2}
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="jobTitle" className="text-sm font-medium">
+                          Jobtitel *
+                        </label>
+                        <input
+                          id="jobTitle"
+                          type="text"
+                          value={jobConfig.jobTitle || ''}
+                          onChange={e => updateJobConfig({ jobTitle: e.target.value })}
+                          placeholder="z.B. Senior Frontend Developer"
+                          className="flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="companyName" className="text-sm font-medium">
+                          Unternehmen
+                        </label>
+                        <input
+                          id="companyName"
+                          type="text"
+                          value={jobConfig.companyName || ''}
+                          onChange={e => updateJobConfig({ companyName: e.target.value })}
+                          placeholder="z.B. Acme GmbH"
+                          className="flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="jobBenefits" className="text-sm font-medium">
+                        Benefits / Vorteile
+                      </label>
+                      <textarea
+                        id="jobBenefits"
+                        value={jobConfig.benefits?.join('\n') || ''}
+                        onChange={e => updateJobConfig({ benefits: e.target.value.split('\n').filter(Boolean) })}
+                        placeholder="Ein Benefit pro Zeile, z.B.&#10;Remote-First Kultur&#10;30 Tage Urlaub&#10;Weiterbildungsbudget"
+                        rows={3}
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="jobRequirements" className="text-sm font-medium">
+                        Anforderungen
+                      </label>
+                      <textarea
+                        id="jobRequirements"
+                        value={jobConfig.requirements?.join('\n') || ''}
+                        onChange={e => updateJobConfig({ requirements: e.target.value.split('\n').filter(Boolean) })}
+                        placeholder="Eine Anforderung pro Zeile, z.B.&#10;5+ Jahre React-Erfahrung&#10;TypeScript-Kenntnisse&#10;Teamfähigkeit"
+                        rows={3}
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="jobAdditionalContext" className="text-sm font-medium">
+                        Zusätzlicher Kontext
+                      </label>
+                      <textarea
+                        id="jobAdditionalContext"
+                        value={topic}
+                        onChange={e => setTopic(e.target.value)}
+                        placeholder="Was macht diese Stelle besonders? Warum sollte jemand sich bewerben?"
+                        rows={2}
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Job-specific options */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="jobSubStyle" className="text-sm font-medium">
+                      Post-Stil
+                    </label>
+                    <select
+                      id="jobSubStyle"
+                      value={jobConfig.jobSubStyle}
+                      onChange={e => updateJobConfig({ jobSubStyle: e.target.value as JobSubStyle })}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none cursor-pointer"
+                    >
+                      {JOB_SUB_STYLE_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      {JOB_SUB_STYLE_OPTIONS.find(o => o.value === jobConfig.jobSubStyle)?.description}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="candidatePersona" className="text-sm font-medium">
+                      Zielgruppe
+                    </label>
+                    <select
+                      id="candidatePersona"
+                      value={jobConfig.candidatePersona}
+                      onChange={e => updateJobConfig({ candidatePersona: e.target.value as CandidatePersona })}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none cursor-pointer"
+                    >
+                      {CANDIDATE_PERSONA_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      {CANDIDATE_PERSONA_OPTIONS.find(o => o.value === jobConfig.candidatePersona)?.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="industry" className="text-sm font-medium">
+                      Branche
+                    </label>
+                    <select
+                      id="industry"
+                      value={jobConfig.industry}
+                      onChange={e => updateJobConfig({ industry: e.target.value as Industry })}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none cursor-pointer"
+                    >
+                      {INDUSTRY_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="location" className="text-sm font-medium">
+                      Standort
+                    </label>
+                    <input
+                      id="location"
+                      type="text"
+                      value={jobConfig.location || ''}
+                      onChange={e => updateJobConfig({ location: e.target.value })}
+                      placeholder="z.B. Berlin"
+                      className="flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Remote möglich?</label>
+                    <button
+                      type="button"
+                      onClick={() => updateJobConfig({ remoteOption: !jobConfig.remoteOption })}
+                      className={`flex h-10 w-full items-center justify-center rounded-md border text-sm font-medium transition-all ${
+                        jobConfig.remoteOption
+                          ? 'bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-400'
+                          : 'bg-muted border-input text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      {jobConfig.remoteOption ? 'Ja, Remote möglich' : 'Nein, vor Ort'}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

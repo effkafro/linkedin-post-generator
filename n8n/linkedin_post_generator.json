@@ -67,6 +67,28 @@
               },
               "renameOutput": true,
               "outputKey": "Topic Mode"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.mode }}",
+                    "rightValue": "job",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Job Mode"
             }
           ]
         },
@@ -296,18 +318,291 @@
     },
     {
       "parameters": {
-        "content": "## LinkedIn Post Generator\n\nGeneriert professionelle LinkedIn-Posts basierend auf:\n- **Mode:** topic | url\n- **Topic:** Freier Text (bei mode=topic)\n- **URL:** Blog/Artikel-URL (bei mode=url)\n- **Ton:** professional | casual | inspirational | educational\n- **Stil:** story | listicle | question-hook | bold-statement\n\n### URL Mode\nBei mode=url wird die URL gescrapt und der Artikel-Inhalt als Basis für den Post verwendet.",
-        "height": 240,
+        "content": "## LinkedIn Post Generator\n\nGeneriert professionelle LinkedIn-Posts basierend auf:\n- **Mode:** topic | url | job\n- **Topic:** Freier Text (bei mode=topic)\n- **URL:** Blog/Artikel-URL (bei mode=url)\n- **Job:** Stellenausschreibung (bei mode=job)\n- **Ton:** professional | casual | inspirational | educational\n- **Stil:** story | listicle | question-hook | bold-statement\n\n### URL Mode\nBei mode=url wird die URL gescrapt und der Artikel-Inhalt als Basis für den Post verwendet.\n\n### Job Mode\nBei mode=job werden Job-Posts für Recruiter generiert.\n- hasExistingPosting=true: URL zur Stellenausschreibung\n- hasExistingPosting=false: Manuelle Eingabe von Jobtitel, Firma, Benefits etc.",
+        "height": 320,
         "width": 400
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
         -400,
-        -150
+        -200
       ],
       "typeVersion": 1,
       "id": "sticky-note-info",
       "name": "Info"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.jobConfig.hasExistingPosting }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "With URL"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.jobConfig.hasExistingPosting }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Manual Input"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        200,
+        600
+      ],
+      "id": "switch-job-type",
+      "name": "Switch Job Type"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.jobConfig.jobUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        500
+      ],
+      "id": "http-fetch-job-url",
+      "name": "Fetch Job URL"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "title, h1, .job-title, [class*='job-title'], meta[property=\"og:title\"]",
+              "returnValue": "text"
+            },
+            {
+              "key": "content",
+              "cssSelector": "article, main, .job-description, .job-content, [class*='job-description'], [class*='description'], .content",
+              "returnValue": "text"
+            },
+            {
+              "key": "company",
+              "cssSelector": ".company-name, [class*='company'], [class*='employer']",
+              "returnValue": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        600,
+        500
+      ],
+      "id": "html-extract-job",
+      "name": "Extract Job HTML"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"title\": {{ JSON.stringify($json.title || 'Stellenausschreibung') }},\n  \"content\": {{ JSON.stringify(($json.content || '').substring(0, 3000)) }},\n  \"company\": {{ JSON.stringify($json.company || '') }},\n  \"excerpt\": {{ JSON.stringify(($json.content || '').substring(0, 200)) }},\n  \"url\": {{ JSON.stringify($('Webhook').item.json.body.jobConfig.jobUrl) }},\n  \"jobConfig\": {{ JSON.stringify($('Webhook').item.json.body.jobConfig) }},\n  \"tone\": {{ JSON.stringify($('Webhook').item.json.body.tone) }},\n  \"style\": {{ JSON.stringify($('Webhook').item.json.body.style) }},\n  \"language\": {{ JSON.stringify($('Webhook').item.json.body.language || 'de') }},\n  \"additionalContext\": {{ JSON.stringify($('Webhook').item.json.body.topic || '') }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        500
+      ],
+      "id": "set-job-url-data",
+      "name": "Set Job URL Data"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"title\": {{ JSON.stringify($json.body.jobConfig.jobTitle || 'Position') }},\n  \"company\": {{ JSON.stringify($json.body.jobConfig.companyName || '') }},\n  \"benefits\": {{ JSON.stringify($json.body.jobConfig.benefits || []) }},\n  \"requirements\": {{ JSON.stringify($json.body.jobConfig.requirements || []) }},\n  \"jobConfig\": {{ JSON.stringify($json.body.jobConfig) }},\n  \"tone\": {{ JSON.stringify($json.body.tone) }},\n  \"style\": {{ JSON.stringify($json.body.style) }},\n  \"language\": {{ JSON.stringify($json.body.language || 'de') }},\n  \"additionalContext\": {{ JSON.stringify($json.body.topic || '') }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        800
+      ],
+      "id": "set-job-manual-data",
+      "name": "Set Job Manual Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Erstelle einen LinkedIn-Recruiting-Post basierend auf dieser Stellenausschreibung:\n\n**Position:** {{ $json.title }}\n**Unternehmen:** {{ $json.company }}\n**URL:** {{ $json.url }}\n**Stellenbeschreibung:**\n{{ $json.content }}\n\n**Zusätzlicher Kontext:** {{ $json.additionalContext }}\n\n---\n**POST-STIL:** {{ $json.jobConfig.jobSubStyle }}\n**ZIELGRUPPE:** {{ $json.jobConfig.candidatePersona }}\n**BRANCHE:** {{ $json.jobConfig.industry }}\n**STANDORT:** {{ $json.jobConfig.location || 'Nicht angegeben' }}\n**REMOTE:** {{ $json.jobConfig.remoteOption ? 'Ja' : 'Nein' }}\n**SPRACHE:** {{ $json.language }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Du bist ein erfahrener LinkedIn-Copywriter, spezialisiert auf Recruiting-Posts und Employer Branding.\n\n## DEINE AUFGABE\nErstelle einen LinkedIn-Post, der die gegebene Stellenausschreibung bewirbt und zum Bewerben oder Teilen animiert.\n\n## POST-STIL ANPASSUNG\nPasse den Stil basierend auf dem gewählten jobSubStyle an:\n\n- **wir-suchen:** Klassischer Recruiting-Post. Beginne mit \"Wir suchen...\" oder \"Unser Team wächst...\". Direkt, professionell, klar strukturiert.\n\n- **kennt-jemanden:** Netzwerk aktivieren. Beginne mit \"Kennt jemand von euch...?\" oder \"Ich suche für mein Netzwerk...\". Persönlich, zum Teilen animierend.\n\n- **persoenlich:** Storytelling-Ansatz. Beginne mit \"In meinem Team suchen wir...\" oder \"Ich erinnere mich, als ich selbst...\". Authentisch, persönliche Perspektive.\n\n- **opportunity:** Benefits-fokussiert. Beginne mit \"Diese Chance solltest du nicht verpassen...\" oder \"Was wäre, wenn dein nächster Job...\". Spannend, Vorteile hervorhebend.\n\n## ZIELGRUPPEN-ANPASSUNG\nPasse die Ansprache basierend auf candidatePersona an:\n\n- **junior:** Betone Lernmöglichkeiten, Mentoring, Teamkultur, Entwicklungschancen. Ermutigender Ton.\n- **senior:** Betone Verantwortung, technische Challenges, Impact, Gestaltungsspielraum. Respektvoller Ton auf Augenhöhe.\n- **c-level:** Betone Strategie, Leadership-Rolle, Unternehmensvision, Einfluss. Executive-Sprache.\n- **freelancer:** Betone Projekt-Scope, Flexibilität, Tagessatz-Transparenz, klare Timelines.\n\n## BRANCHEN-HASHTAGS\nFüge branchenspezifische Hashtags hinzu:\n- **tech:** #tech #developer #coding #softwareengineering\n- **finance:** #finance #banking #fintech #financejobs\n- **healthcare:** #healthcare #pharma #medtech #healthcarejobs\n- **marketing:** #marketing #digital #creative #marketingjobs\n- **hr:** #hr #recruiting #peopleops #humanresources\n- **legal:** #legal #compliance #law #legaljobs\n- **other:** Generische Job-Hashtags\n\n## FORMAT-REGELN\n1. **Hook:** Erste Zeile MUSS Aufmerksamkeit erregen (erscheint im Feed)\n2. **Länge:** 800-1500 Zeichen\n3. **Struktur:** Klare Absätze, gut lesbar\n4. **Emojis:** Sparsam (max. 3-5), passend zum Ton\n5. **Hashtags:** 4-6 relevante (#hiring #jobs + branchenspezifische + standortspezifische)\n6. **CTA:** Klare Handlungsaufforderung (\"Link in den Kommentaren\", \"DM mich\", \"Teile diesen Post\")\n7. **Remote:** Wenn remoteOption=true, erwähne dies prominent\n\n## OUTPUT\nGib NUR den fertigen LinkedIn-Post aus. Keine Erklärungen, keine Einleitung, keine URL im Post."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        1000,
+        500
+      ],
+      "id": "chain-llm-job-url",
+      "name": "Chain LLM (Job URL)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Erstelle einen LinkedIn-Recruiting-Post für folgende Position:\n\n**Position:** {{ $json.title }}\n**Unternehmen:** {{ $json.company }}\n\n**Benefits:**\n{{ $json.benefits.length > 0 ? $json.benefits.map(b => '- ' + b).join('\\n') : 'Nicht angegeben' }}\n\n**Anforderungen:**\n{{ $json.requirements.length > 0 ? $json.requirements.map(r => '- ' + r).join('\\n') : 'Nicht angegeben' }}\n\n**Zusätzlicher Kontext:** {{ $json.additionalContext }}\n\n---\n**POST-STIL:** {{ $json.jobConfig.jobSubStyle }}\n**ZIELGRUPPE:** {{ $json.jobConfig.candidatePersona }}\n**BRANCHE:** {{ $json.jobConfig.industry }}\n**STANDORT:** {{ $json.jobConfig.location || 'Nicht angegeben' }}\n**REMOTE:** {{ $json.jobConfig.remoteOption ? 'Ja' : 'Nein' }}\n**SPRACHE:** {{ $json.language }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Du bist ein erfahrener LinkedIn-Copywriter, spezialisiert auf Recruiting-Posts und Employer Branding.\n\n## DEINE AUFGABE\nErstelle einen LinkedIn-Post für die gegebene Stelle. Du hast nur die manuell eingegebenen Informationen - erstelle daraus einen überzeugenden Recruiting-Post.\n\n## POST-STIL ANPASSUNG\nPasse den Stil basierend auf dem gewählten jobSubStyle an:\n\n- **wir-suchen:** Klassischer Recruiting-Post. Beginne mit \"Wir suchen...\" oder \"Unser Team wächst...\". Direkt, professionell, klar strukturiert.\n\n- **kennt-jemanden:** Netzwerk aktivieren. Beginne mit \"Kennt jemand von euch...?\" oder \"Ich suche für mein Netzwerk...\". Persönlich, zum Teilen animierend.\n\n- **persoenlich:** Storytelling-Ansatz. Beginne mit \"In meinem Team suchen wir...\" oder \"Ich erinnere mich, als ich selbst...\". Authentisch, persönliche Perspektive.\n\n- **opportunity:** Benefits-fokussiert. Beginne mit \"Diese Chance solltest du nicht verpassen...\" oder \"Was wäre, wenn dein nächster Job...\". Spannend, Vorteile hervorhebend.\n\n## ZIELGRUPPEN-ANPASSUNG\nPasse die Ansprache basierend auf candidatePersona an:\n\n- **junior:** Betone Lernmöglichkeiten, Mentoring, Teamkultur, Entwicklungschancen. Ermutigender Ton.\n- **senior:** Betone Verantwortung, technische Challenges, Impact, Gestaltungsspielraum. Respektvoller Ton auf Augenhöhe.\n- **c-level:** Betone Strategie, Leadership-Rolle, Unternehmensvision, Einfluss. Executive-Sprache.\n- **freelancer:** Betone Projekt-Scope, Flexibilität, Tagessatz-Transparenz, klare Timelines.\n\n## BRANCHEN-HASHTAGS\nFüge branchenspezifische Hashtags hinzu:\n- **tech:** #tech #developer #coding #softwareengineering\n- **finance:** #finance #banking #fintech #financejobs\n- **healthcare:** #healthcare #pharma #medtech #healthcarejobs\n- **marketing:** #marketing #digital #creative #marketingjobs\n- **hr:** #hr #recruiting #peopleops #humanresources\n- **legal:** #legal #compliance #law #legaljobs\n- **other:** Generische Job-Hashtags\n\n## FORMAT-REGELN\n1. **Hook:** Erste Zeile MUSS Aufmerksamkeit erregen (erscheint im Feed)\n2. **Länge:** 800-1500 Zeichen\n3. **Struktur:** Klare Absätze, gut lesbar\n4. **Emojis:** Sparsam (max. 3-5), passend zum Ton\n5. **Hashtags:** 4-6 relevante (#hiring #jobs + branchenspezifische + standortspezifische wenn angegeben)\n6. **CTA:** Klare Handlungsaufforderung (\"Schreib mir eine DM\", \"Kommentiere mit 'Info'\", \"Teile diesen Post\")\n7. **Remote:** Wenn remoteOption=true, erwähne dies prominent\n8. **Benefits:** Wenn Benefits angegeben, hebe 2-3 der besten hervor\n\n## OUTPUT\nGib NUR den fertigen LinkedIn-Post aus. Keine Erklärungen, keine Einleitung."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        600,
+        800
+      ],
+      "id": "chain-llm-job-manual",
+      "name": "Chain LLM (Job Manual)"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "anthropic/claude-3.5-sonnet"
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        700
+      ],
+      "id": "openrouter-model-job-url",
+      "name": "OpenRouter (Job URL)",
+      "credentials": {
+        "openRouterApi": {
+          "id": "43wsCq61oWf2FXhh",
+          "name": "OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "anthropic/claude-3.5-sonnet"
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        600,
+        1000
+      ],
+      "id": "openrouter-model-job-manual",
+      "name": "OpenRouter (Job Manual)",
+      "credentials": {
+        "openRouterApi": {
+          "id": "43wsCq61oWf2FXhh",
+          "name": "OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"output\": {{ JSON.stringify($('Chain LLM (Job URL)').item.json.text) }},\n  \"source\": {\n    \"title\": {{ JSON.stringify($('Set Job URL Data').item.json.title) }},\n    \"excerpt\": {{ JSON.stringify($('Set Job URL Data').item.json.excerpt) }},\n    \"url\": {{ JSON.stringify($('Set Job URL Data').item.json.url) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        500
+      ],
+      "id": "respond-job-url",
+      "name": "Respond (Job URL)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"output\": {{ JSON.stringify($('Chain LLM (Job Manual)').item.json.text) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        800,
+        800
+      ],
+      "id": "respond-job-manual",
+      "name": "Respond (Job Manual)"
     }
   ],
   "pinData": {},
@@ -335,6 +630,13 @@
         [
           {
             "node": "Chain LLM (Topic)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Job Type",
             "type": "main",
             "index": 0
           }
@@ -419,6 +721,119 @@
         [
           {
             "node": "Chain LLM (URL)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Job Type": {
+      "main": [
+        [
+          {
+            "node": "Fetch Job URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Job Manual Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Job Manual Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Job URL": {
+      "main": [
+        [
+          {
+            "node": "Extract Job HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Job HTML": {
+      "main": [
+        [
+          {
+            "node": "Set Job URL Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Job URL Data": {
+      "main": [
+        [
+          {
+            "node": "Chain LLM (Job URL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Job Manual Data": {
+      "main": [
+        [
+          {
+            "node": "Chain LLM (Job Manual)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chain LLM (Job URL)": {
+      "main": [
+        [
+          {
+            "node": "Respond (Job URL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chain LLM (Job Manual)": {
+      "main": [
+        [
+          {
+            "node": "Respond (Job Manual)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter (Job URL)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chain LLM (Job URL)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter (Job Manual)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chain LLM (Job Manual)",
             "type": "ai_languageModel",
             "index": 0
           }
