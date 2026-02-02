@@ -220,8 +220,8 @@ export function usePostHistory() {
     style: Style
     language: Language
     content: string
-  }) => {
-    const newItem: HistoryItem = {
+  }): Promise<HistoryItem | null> => {
+    let newItem: HistoryItem = {
       id: crypto.randomUUID(),
       user_id: user?.id,
       mode: item.mode,
@@ -275,14 +275,22 @@ export function usePostHistory() {
         console.error('Error saving post to Supabase:', error)
         // Rollback optimistic update on error
         setHistory(prev => prev.filter(h => h.id !== newItem.id))
+        return null
       } else if (data) {
         // Update the item with the Supabase-generated ID
         const postData = data as PostRow
+        const updatedItem = { ...newItem, id: postData.id }
+
+        // Update local state with real ID
         setHistory(prev =>
-          prev.map(h => h.id === newItem.id ? { ...h, id: postData.id } : h)
+          prev.map(h => h.id === newItem.id ? updatedItem : h)
         )
+
+        newItem = updatedItem
       }
     }
+
+    return newItem
   }, [user])
 
   const removeFromHistory = useCallback(async (id: string) => {

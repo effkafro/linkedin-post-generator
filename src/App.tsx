@@ -23,7 +23,7 @@ function AppContent() {
     setSidebarOpen(false)
   }, [])
 
-  const handlePostGenerated = useCallback((data: {
+  const handlePostGenerated = useCallback(async (data: {
     mode: InputMode
     topic: string
     url?: string
@@ -34,23 +34,24 @@ function AppContent() {
     language: Language
     content: string
   }) => {
-    addToHistory(data)
-    // Clear selection after generating a new post
-    setSelectedHistoryItem(null)
+    const newItem = await addToHistory(data)
+    if (newItem) {
+      setSelectedHistoryItem(newItem)
+    }
   }, [addToHistory])
 
   const initialState = selectedHistoryItem
     ? {
-        mode: selectedHistoryItem.mode,
-        topic: selectedHistoryItem.topic,
-        url: selectedHistoryItem.url,
-        source: selectedHistoryItem.source,
-        jobConfig: selectedHistoryItem.jobConfig,
-        tone: selectedHistoryItem.tone,
-        style: selectedHistoryItem.style,
-        language: selectedHistoryItem.language,
-        content: selectedHistoryItem.content,
-      }
+      mode: selectedHistoryItem.mode,
+      topic: selectedHistoryItem.topic,
+      url: selectedHistoryItem.url,
+      source: selectedHistoryItem.source,
+      jobConfig: selectedHistoryItem.jobConfig,
+      tone: selectedHistoryItem.tone,
+      style: selectedHistoryItem.style,
+      language: selectedHistoryItem.language,
+      content: selectedHistoryItem.content,
+    }
     : undefined
 
   return (
