@@ -65,21 +65,26 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   if (!isConfigured) {
     return (
       <div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-200"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200"
         onClick={onClose}
       >
         <div
-          className="bg-card text-card-foreground border border-border rounded-xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in-95 duration-200"
+          className="glass-panel w-full max-w-md mx-4 p-8 shadow-2xl animate-in zoom-in-95 duration-200"
           onClick={e => e.stopPropagation()}
         >
-          <div className="p-6 text-center">
-            <h2 className="text-xl font-semibold mb-4">Auth nicht konfiguriert</h2>
-            <p className="text-muted-foreground mb-4">
-              Supabase ist nicht konfiguriert. Bitte setze VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY in deiner .env.local Datei.
+          <div className="text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold">Auth nicht konfiguriert</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Supabase ist nicht konfiguriert. Bitte setze <code className="bg-secondary/50 px-1 py-0.5 rounded text-xs font-mono">VITE_SUPABASE_URL</code> und <code className="bg-secondary/50 px-1 py-0.5 rounded text-xs font-mono">VITE_SUPABASE_ANON_KEY</code> in deiner .env.local Datei.
             </p>
             <button
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4"
+              className="glass-button w-full h-10 text-sm font-medium"
             >
               Schließen
             </button>
@@ -91,21 +96,21 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-200"
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-card text-card-foreground border border-border rounded-xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in-95 duration-200"
+        className="glass-panel w-full max-w-md mx-4 p-0 shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-semibold">
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <h2 className="text-xl font-semibold tracking-tight">
             {mode === 'signin' ? 'Anmelden' : 'Registrieren'}
           </h2>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="rounded-full p-1 text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
             aria-label="Schließen"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,14 +121,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* OAuth Buttons */}
-
-
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="space-y-2">
-                <label htmlFor="fullName" className="text-sm font-medium">
+                <label htmlFor="fullName" className="text-sm font-medium pl-1">
                   Name
                 </label>
                 <input
@@ -132,13 +133,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
                   placeholder="Max Mustermann"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="glass-input w-full rounded-xl px-4 py-2.5 transition-all"
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <label htmlFor="email" className="text-sm font-medium pl-1">
                 E-Mail
               </label>
               <input
@@ -148,12 +149,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="max@example.com"
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="glass-input w-full rounded-xl px-4 py-2.5 transition-all"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label htmlFor="password" className="text-sm font-medium pl-1">
                 Passwort
               </label>
               <input
@@ -164,29 +165,35 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 placeholder="Mindestens 6 Zeichen"
                 required
                 minLength={6}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="glass-input w-full rounded-xl px-4 py-2.5 transition-all"
               />
             </div>
 
             {error && (
-              <div className="bg-destructive/15 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
-                {error}
+              <div className="glass-panel border-destructive/30 bg-destructive/10 text-destructive px-4 py-3 rounded-xl text-sm flex items-start gap-3">
+                <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{error}</span>
               </div>
             )}
 
             {successMessage && (
-              <div className="bg-green-500/15 border border-green-500/20 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm">
-                {successMessage}
+              <div className="glass-panel border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
+                <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{successMessage}</span>
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 disabled:opacity-50"
+              className="w-full flex items-center justify-center rounded-xl text-sm font-semibold shadow-lg transition-all duration-300 h-11 px-4 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
@@ -199,13 +206,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </form>
 
           {/* Switch Mode */}
-          <div className="text-center text-sm">
+          <div className="text-center text-sm pt-2">
             {mode === 'signin' ? (
               <p className="text-muted-foreground">
                 Noch kein Konto?{' '}
                 <button
                   onClick={() => switchMode('signup')}
-                  className="text-primary hover:underline font-medium"
+                  className="text-primary hover:text-primary/80 hover:underline font-semibold transition-colors"
                 >
                   Registrieren
                 </button>
@@ -215,7 +222,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 Bereits registriert?{' '}
                 <button
                   onClick={() => switchMode('signin')}
-                  className="text-primary hover:underline font-medium"
+                  className="text-primary hover:text-primary/80 hover:underline font-semibold transition-colors"
                 >
                   Anmelden
                 </button>

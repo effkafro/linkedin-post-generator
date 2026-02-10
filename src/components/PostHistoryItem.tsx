@@ -45,27 +45,27 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
   return (
     <div
       onClick={() => onSelect(item)}
-      className="group p-3 rounded-lg bg-background/50 hover:bg-accent/50 border border-border/50 hover:border-border cursor-pointer transition-all duration-200"
+      className="group relative p-4 rounded-2xl glass-input cursor-pointer hover:bg-white/5 hover:border-primary/20 transition-all duration-300 shadow-sm hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2">
             {item.mode === 'url' && (
-              <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary rounded">
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold bg-primary/20 text-primary rounded-md backdrop-blur-md border border-primary/10">
                 URL
               </span>
             )}
-            <h4 className="text-sm font-medium text-foreground truncate">
-              {truncateText(displayTitle, 40)}
+            <h4 className="text-sm font-semibold text-foreground truncate leading-tight">
+              {truncateText(displayTitle || 'Ohne Titel', 40)}
             </h4>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed opacity-80">
             {truncateText(item.content, 80)}
           </p>
         </div>
         <button
           onClick={handleDelete}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all absolute top-3 right-3"
           aria-label="Eintrag löschen"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,9 +73,9 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
           </svg>
         </button>
       </div>
-      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 mt-3 text-[10px] font-medium text-muted-foreground/70">
         <span>{formatRelativeTime(item.createdAt)}</span>
-        <span className="text-border">·</span>
+        <span className="w-1 h-1 rounded-full bg-border"></span>
         <span>{item.charCount} Zeichen</span>
       </div>
     </div>

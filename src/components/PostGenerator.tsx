@@ -108,6 +108,14 @@ const DEFAULT_JOB_CONFIG: JobConfig = {
   remoteOption: false,
 }
 
+const formatTextInteractive = (text: string): string => {
+  if (!text) return ''
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>')
+}
+
 export default function PostGenerator({ initialState, onPostGenerated }: PostGeneratorProps) {
   const [mode, setMode] = useState<InputMode>(initialState?.mode ?? 'topic')
   const [topic, setTopic] = useState(initialState?.topic ?? '')
@@ -257,19 +265,18 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
         </header>
 
         {/* Input Card */}
-        <div className="bg-card text-card-foreground shadow-sm border border-border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-md">
-          <div className="p-6 md:p-8 space-y-6">
+        <div className="glass-panel text-card-foreground transition-all duration-300 hover:shadow-[0_0_40px_-10px_rgba(14,165,233,0.1)]">
+          <div className="p-6 md:p-8 space-y-8">
             {/* Mode Tabs */}
-            <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+            <div className="flex gap-1 p-1 bg-secondary/30 rounded-xl w-fit backdrop-blur-md">
               {MODE_TABS.map(tab => (
                 <button
                   key={tab.value}
                   onClick={() => setMode(tab.value)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                    mode === tab.value
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${mode === tab.value
+                    ? 'bg-white/20 text-foreground shadow-sm backdrop-blur-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/10'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -278,8 +285,8 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
 
             {/* Topic Textarea (mode=topic) */}
             {mode === 'topic' && (
-              <div className="space-y-2">
-                <label htmlFor="topic" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <div className="space-y-3">
+                <label htmlFor="topic" className="text-sm font-medium leading-none text-foreground/80 pl-1">
                   Thema
                 </label>
                 <textarea
@@ -288,15 +295,15 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                   onChange={e => setTopic(e.target.value)}
                   placeholder="Worüber möchtest du schreiben? (z.B. 'Die Zukunft von Remote Work')"
                   rows={4}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-all"
+                  className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-all"
                 />
               </div>
             )}
 
             {/* URL Input (mode=url) */}
             {mode === 'url' && (
-              <div className="space-y-2">
-                <label htmlFor="url" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <div className="space-y-3">
+                <label htmlFor="url" className="text-sm font-medium leading-none text-foreground/80 pl-1">
                   Artikel-URL
                 </label>
                 <input
@@ -305,11 +312,10 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                   value={url}
                   onChange={e => setUrl(e.target.value)}
                   placeholder="https://example.com/blog-artikel"
-                  className={`flex w-full h-10 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all ${
-                    url && !isValidUrl(url)
-                      ? 'border-destructive focus-visible:ring-destructive'
-                      : 'border-input'
-                  }`}
+                  className={`flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all ${url && !isValidUrl(url)
+                    ? 'border-destructive/50 ring-destructive/50 focus-visible:ring-destructive/50'
+                    : ''
+                    }`}
                 />
                 {url && !isValidUrl(url) && (
                   <p className="text-xs text-destructive">Bitte gib eine gültige URL ein (z.B. https://...)</p>
@@ -325,27 +331,25 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
               <div className="space-y-6">
                 {/* Has existing posting toggle */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium">Stellenausschreibung vorhanden?</label>
-                  <div className="flex gap-2">
+                  <label className="text-sm font-medium pl-1 text-foreground/80">Stellenausschreibung vorhanden?</label>
+                  <div className="flex gap-3 p-1 rounded-2xl bg-secondary/20">
                     <button
                       type="button"
                       onClick={() => updateJobConfig({ hasExistingPosting: true })}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        jobConfig.hasExistingPosting
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
+                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-300 ${jobConfig.hasExistingPosting
+                        ? 'glass-button shadow-lg'
+                        : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                        }`}
                     >
                       Ja, ich habe eine URL
                     </button>
                     <button
                       type="button"
                       onClick={() => updateJobConfig({ hasExistingPosting: false })}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        !jobConfig.hasExistingPosting
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
+                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-300 ${!jobConfig.hasExistingPosting
+                        ? 'glass-button shadow-lg'
+                        : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                        }`}
                     >
                       Nein, ich gebe Details ein
                     </button>
@@ -365,18 +369,17 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                         value={jobConfig.jobUrl || ''}
                         onChange={e => updateJobConfig({ jobUrl: e.target.value })}
                         placeholder="https://careers.example.com/jobs/123"
-                        className={`flex w-full h-10 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all ${
-                          jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl)
-                            ? 'border-destructive focus-visible:ring-destructive'
-                            : 'border-input'
-                        }`}
+                        className={`flex w-full h-10 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all ${jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl)
+                          ? 'border-destructive focus-visible:ring-destructive'
+                          : 'border-input'
+                          }`}
                       />
                       {jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl) && (
                         <p className="text-xs text-destructive">Bitte gib eine gültige URL ein</p>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="jobContext" className="text-sm font-medium">
+                    <div className="space-y-3">
+                      <label htmlFor="jobContext" className="text-sm font-medium pl-1 text-foreground/80">
                         Zusätzlicher Kontext (optional)
                       </label>
                       <textarea
@@ -385,15 +388,15 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                         onChange={e => setTopic(e.target.value)}
                         placeholder="z.B. 'Wir haben gerade unser Team verdoppelt' oder 'Diese Stelle ist perfekt für...'"
                         rows={2}
-                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                        className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="jobTitle" className="text-sm font-medium">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label htmlFor="jobTitle" className="text-sm font-medium pl-1 text-foreground/80">
                           Jobtitel *
                         </label>
                         <input
@@ -402,11 +405,11 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                           value={jobConfig.jobTitle || ''}
                           onChange={e => updateJobConfig({ jobTitle: e.target.value })}
                           placeholder="z.B. Senior Frontend Developer"
-                          className="flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
+                          className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label htmlFor="companyName" className="text-sm font-medium">
+                      <div className="space-y-3">
+                        <label htmlFor="companyName" className="text-sm font-medium pl-1 text-foreground/80">
                           Unternehmen
                         </label>
                         <input
@@ -415,12 +418,12 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                           value={jobConfig.companyName || ''}
                           onChange={e => updateJobConfig({ companyName: e.target.value })}
                           placeholder="z.B. Acme GmbH"
-                          className="flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
+                          className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="jobBenefits" className="text-sm font-medium">
+                    <div className="space-y-3">
+                      <label htmlFor="jobBenefits" className="text-sm font-medium pl-1 text-foreground/80">
                         Benefits / Vorteile
                       </label>
                       <textarea
@@ -429,11 +432,11 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                         onChange={e => updateJobConfig({ benefits: e.target.value.split('\n').filter(Boolean) })}
                         placeholder="Ein Benefit pro Zeile, z.B.&#10;Remote-First Kultur&#10;30 Tage Urlaub&#10;Weiterbildungsbudget"
                         rows={3}
-                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                        className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="jobRequirements" className="text-sm font-medium">
+                    <div className="space-y-3">
+                      <label htmlFor="jobRequirements" className="text-sm font-medium pl-1 text-foreground/80">
                         Anforderungen
                       </label>
                       <textarea
@@ -442,11 +445,11 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                         onChange={e => updateJobConfig({ requirements: e.target.value.split('\n').filter(Boolean) })}
                         placeholder="Eine Anforderung pro Zeile, z.B.&#10;5+ Jahre React-Erfahrung&#10;TypeScript-Kenntnisse&#10;Teamfähigkeit"
                         rows={3}
-                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                        className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="jobAdditionalContext" className="text-sm font-medium">
+                    <div className="space-y-3">
+                      <label htmlFor="jobAdditionalContext" className="text-sm font-medium pl-1 text-foreground/80">
                         Zusätzlicher Kontext
                       </label>
                       <textarea
@@ -455,76 +458,91 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                         onChange={e => setTopic(e.target.value)}
                         placeholder="Was macht diese Stelle besonders? Warum sollte jemand sich bewerben?"
                         rows={2}
-                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none transition-all"
+                        className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all"
                       />
                     </div>
                   </div>
                 )}
 
                 {/* Job-specific options */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="jobSubStyle" className="text-sm font-medium">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <label htmlFor="jobSubStyle" className="text-sm font-medium pl-1 text-foreground/80">
                       Post-Stil
                     </label>
-                    <select
-                      id="jobSubStyle"
-                      value={jobConfig.jobSubStyle}
-                      onChange={e => updateJobConfig({ jobSubStyle: e.target.value as JobSubStyle })}
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none cursor-pointer"
-                    >
-                      {JOB_SUB_STYLE_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="relative">
+                      <select
+                        id="jobSubStyle"
+                        value={jobConfig.jobSubStyle}
+                        onChange={e => updateJobConfig({ jobSubStyle: e.target.value as JobSubStyle })}
+                        className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+                      >
+                        {JOB_SUB_STYLE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value} className="bg-background text-foreground">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground/70">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-1">
                       {JOB_SUB_STYLE_OPTIONS.find(o => o.value === jobConfig.jobSubStyle)?.description}
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="candidatePersona" className="text-sm font-medium">
+                  <div className="space-y-3">
+                    <label htmlFor="candidatePersona" className="text-sm font-medium pl-1 text-foreground/80">
                       Zielgruppe
                     </label>
-                    <select
-                      id="candidatePersona"
-                      value={jobConfig.candidatePersona}
-                      onChange={e => updateJobConfig({ candidatePersona: e.target.value as CandidatePersona })}
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none cursor-pointer"
-                    >
-                      {CANDIDATE_PERSONA_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="relative">
+                      <select
+                        id="candidatePersona"
+                        value={jobConfig.candidatePersona}
+                        onChange={e => updateJobConfig({ candidatePersona: e.target.value as CandidatePersona })}
+                        className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+                      >
+                        {CANDIDATE_PERSONA_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value} className="bg-background text-foreground">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground/70">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-1">
                       {CANDIDATE_PERSONA_OPTIONS.find(o => o.value === jobConfig.candidatePersona)?.description}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="industry" className="text-sm font-medium">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-3">
+                    <label htmlFor="industry" className="text-sm font-medium pl-1 text-foreground/80">
                       Branche
                     </label>
-                    <select
-                      id="industry"
-                      value={jobConfig.industry}
-                      onChange={e => updateJobConfig({ industry: e.target.value as Industry })}
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none cursor-pointer"
-                    >
-                      {INDUSTRY_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        id="industry"
+                        value={jobConfig.industry}
+                        onChange={e => updateJobConfig({ industry: e.target.value as Industry })}
+                        className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+                      >
+                        {INDUSTRY_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value} className="bg-background text-foreground">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground/70">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="location" className="text-sm font-medium">
+                  <div className="space-y-3">
+                    <label htmlFor="location" className="text-sm font-medium pl-1 text-foreground/80">
                       Standort
                     </label>
                     <input
@@ -533,19 +551,18 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                       value={jobConfig.location || ''}
                       onChange={e => updateJobConfig({ location: e.target.value })}
                       placeholder="z.B. Berlin"
-                      className="flex w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
+                      className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Remote möglich?</label>
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium pl-1 text-foreground/80">Remote möglich?</label>
                     <button
                       type="button"
                       onClick={() => updateJobConfig({ remoteOption: !jobConfig.remoteOption })}
-                      className={`flex h-10 w-full items-center justify-center rounded-md border text-sm font-medium transition-all ${
-                        jobConfig.remoteOption
-                          ? 'bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-400'
-                          : 'bg-muted border-input text-muted-foreground hover:bg-muted/80'
-                      }`}
+                      className={`flex h-12 w-full items-center justify-center rounded-2xl text-sm font-medium transition-all duration-300 ${jobConfig.remoteOption
+                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-inner'
+                        : 'glass-input text-muted-foreground hover:bg-white/5'
+                        }`}
                     >
                       {jobConfig.remoteOption ? 'Ja, Remote möglich' : 'Nein, vor Ort'}
                     </button>
@@ -556,15 +573,15 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
 
             {/* Dropdowns Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <label htmlFor="tone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <div className="space-y-3">
+                <div className="flex items-center pl-1">
+                  <label htmlFor="tone" className="text-sm font-medium leading-none text-foreground/80">
                     Tonfall
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowToneHelp(true)}
-                    className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                    className="ml-1.5 text-muted-foreground hover:text-primary transition-colors"
                     aria-label="Tonfall-Hilfe anzeigen"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -577,29 +594,29 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                     id="tone"
                     value={tone}
                     onChange={e => setTone(e.target.value as Tone)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all cursor-pointer"
+                    className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all cursor-pointer"
                   >
                     {TONE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>
+                      <option key={opt.value} value={opt.value} className="bg-background text-foreground">
                         {opt.label}
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground/70">
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <label htmlFor="style" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <div className="space-y-3">
+                <div className="flex items-center pl-1">
+                  <label htmlFor="style" className="text-sm font-medium leading-none text-foreground/80">
                     Stil
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowStyleHelp(true)}
-                    className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                    className="ml-1.5 text-muted-foreground hover:text-primary transition-colors"
                     aria-label="Stil-Hilfe anzeigen"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -612,22 +629,22 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                     id="style"
                     value={style}
                     onChange={e => setStyle(e.target.value as Style)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all cursor-pointer"
+                    className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all cursor-pointer"
                   >
                     {STYLE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>
+                      <option key={opt.value} value={opt.value} className="bg-background text-foreground">
                         {opt.label}
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground/70">
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="language" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              <div className="space-y-3">
+                <label htmlFor="language" className="text-sm font-medium leading-none text-foreground/80 pl-1">
                   Sprache
                 </label>
                 <div className="relative">
@@ -635,15 +652,15 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                     id="language"
                     value={language}
                     onChange={e => setLanguage(e.target.value as Language)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all cursor-pointer"
+                    className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all cursor-pointer"
                   >
                     {LANGUAGE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>
+                      <option key={opt.value} value={opt.value} className="bg-background text-foreground">
                         {opt.label}
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground/70">
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                   </div>
                 </div>
@@ -654,12 +671,15 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
             <button
               onClick={handleGenerate}
               disabled={loading || !canGenerate}
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 w-full shadow-md"
+              className={`flex w-full items-center justify-center rounded-2xl py-4 text-base font-semibold shadow-lg transition-all duration-300 ${loading || !canGenerate
+                ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]'
+                }`}
             >
               {loading ? (
                 <>
-                  <span className="animate-spin mr-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <span className="animate-spin mr-3">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
@@ -675,41 +695,45 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
 
         {/* Error Message */}
         {error && (
-          <div className="bg-destructive/15 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {error}
+          <div className="glass-panel border-destructive/30 bg-destructive/10 text-destructive px-6 py-4 rounded-2xl text-sm flex items-start gap-4 animate-in fade-in slide-in-from-top-2 shadow-lg">
+            <div className="p-2 rounded-full bg-destructive/10 shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="space-y-1 py-0.5">
+              <p className="font-semibold">Ein Fehler ist aufgetreten</p>
+              <p className="opacity-90 leading-relaxed">{error}</p>
+            </div>
           </div>
         )}
 
         {/* Tone Help Modal */}
         {showToneHelp && (
           <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200"
             onClick={() => setShowToneHelp(false)}
           >
             <div
-              className="bg-card text-card-foreground border border-border rounded-xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in-95 duration-200"
+              className="glass-panel w-full max-w-lg mx-4 p-0 shadow-2xl animate-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <h3 className="text-lg font-semibold">Tonfall-Optionen</h3>
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <h3 className="text-xl font-semibold tracking-tight">Tonfall-Optionen</h3>
                 <button
                   onClick={() => setShowToneHelp(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Schließen"
+                  className="rounded-full p-1 text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
-              <div className="p-4 space-y-4">
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {TONE_OPTIONS.map(opt => (
-                  <div key={opt.value} className="space-y-1">
-                    <span className="font-medium text-foreground">{opt.label}</span>
-                    <p className="text-sm text-muted-foreground">{TONE_DESCRIPTIONS[opt.value]}</p>
+                  <div key={opt.value} className="p-4 rounded-2xl bg-secondary/30 border border-white/5 hover:bg-secondary/50 transition-colors">
+                    <div className="font-medium text-base mb-1 text-primary">{opt.label}</div>
+                    <div className="text-sm text-muted-foreground leading-relaxed">{TONE_DESCRIPTIONS[opt.value]}</div>
                   </div>
                 ))}
               </div>
@@ -720,30 +744,29 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
         {/* Style Help Modal */}
         {showStyleHelp && (
           <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200"
             onClick={() => setShowStyleHelp(false)}
           >
             <div
-              className="bg-card text-card-foreground border border-border rounded-xl shadow-lg max-w-md w-full mx-4 animate-in zoom-in-95 duration-200"
+              className="glass-panel w-full max-w-lg mx-4 p-0 shadow-2xl animate-in zoom-in-95 duration-200"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <h3 className="text-lg font-semibold">Stil-Optionen</h3>
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <h3 className="text-xl font-semibold tracking-tight">Stil-Optionen</h3>
                 <button
                   onClick={() => setShowStyleHelp(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Schließen"
+                  className="rounded-full p-1 text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
-              <div className="p-4 space-y-4">
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {STYLE_OPTIONS.map(opt => (
-                  <div key={opt.value} className="space-y-1">
-                    <span className="font-medium text-foreground">{opt.label}</span>
-                    <p className="text-sm text-muted-foreground">{STYLE_DESCRIPTIONS[opt.value]}</p>
+                  <div key={opt.value} className="p-4 rounded-2xl bg-secondary/30 border border-white/5 hover:bg-secondary/50 transition-colors">
+                    <div className="font-medium text-base mb-1 text-primary">{opt.label}</div>
+                    <div className="text-sm text-muted-foreground leading-relaxed">{STYLE_DESCRIPTIONS[opt.value]}</div>
                   </div>
                 ))}
               </div>
@@ -753,58 +776,57 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
 
         {/* Output Section */}
         {output && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Version Navigation */}
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-lg font-semibold text-foreground">Ergebnis</h2>
-              <div className="flex items-center gap-2 bg-secondary/50 p-1 rounded-lg">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">Ergebnis</h2>
+              <div className="flex items-center gap-3 bg-secondary/30 p-1.5 rounded-xl backdrop-blur-md border border-white/5">
                 <button
                   onClick={() => goToVersion(currentIndex - 1)}
                   disabled={currentIndex <= 0 || !!refining}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-background disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   aria-label="Vorherige Version"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-xs font-medium text-muted-foreground w-16 text-center select-none">
+                <span className="text-sm font-medium text-muted-foreground w-20 text-center select-none font-mono">
                   V{currentIndex + 1} / {versions.length}
                 </span>
                 <button
                   onClick={() => goToVersion(currentIndex + 1)}
                   disabled={currentIndex >= versions.length - 1 || !!refining}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-background disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   aria-label="Nächste Version"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
             </div>
 
-            <div className="bg-card text-card-foreground shadow-sm border border-border rounded-xl overflow-hidden">
-              {/* Post Content */}
-              <div className="p-6 md:p-8 bg-card">
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <p className="whitespace-pre-wrap leading-relaxed text-base">{output}</p>
-                </div>
-              </div>
+            {/* Content Display */}
+            <div className="glass-panel overflow-hidden shadow-lg">
+              <div
+                className="p-6 md:p-8 whitespace-pre-wrap leading-relaxed text-foreground/90 font-outfit text-lg"
+                dangerouslySetInnerHTML={{
+                  __html: formatTextInteractive(output)
+                }}
+              />
 
               {/* Source Badge (URL Mode) */}
               {source && (
-                <div className="px-6 py-3 bg-muted/50 border-t border-border">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    <span>Basierend auf:</span>
+                <div className="px-6 py-3 bg-white/5 border-t border-white/5 text-xs text-muted-foreground flex items-center gap-2">
+                  <span className="font-semibold uppercase tracking-wider opacity-70">Quelle:</span>
+                  <div className="flex items-center gap-2 truncate">
+                    {source.favicon && <img src={source.favicon} alt="" className="w-4 h-4 rounded-sm opacity-70" />}
                     <a
                       href={source.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-primary hover:underline truncate max-w-xs"
+                      className="font-medium text-primary hover:text-primary/80 hover:underline truncate max-w-xs transition-colors"
                     >
                       {source.title}
                     </a>
@@ -813,36 +835,39 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
               )}
 
               {/* Metada & Actions footer */}
-              <div className="bg-muted/30 px-6 py-4 border-t border-border flex flex-col gap-4">
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
+              <div className="bg-muted/30 px-6 py-6 border-t border-white/5 flex flex-col gap-6">
+                <div className="flex justify-between items-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <span>{output.length} Zeichen</span>
                   <span>{loading ? 'Generiere...' : 'Fertig'}</span>
                 </div>
 
                 {/* Refine Options Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {REFINE_OPTIONS.map(({ action, label }) => (
-                    <button
-                      key={action}
-                      onClick={() => refine(action, undefined, { tone, style, language })}
-                      disabled={!!refining || loading}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
-                    >
-                      {refining === action ? (
-                        <span className="animate-spin mr-1">
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        </span>
-                      ) : null}
-                      {label}
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">Verfeinern</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {REFINE_OPTIONS.map(({ action, label }) => (
+                      <button
+                        key={action}
+                        onClick={() => refine(action, undefined, { tone, style, language })}
+                        disabled={!!refining || loading}
+                        className="glass-button h-10 px-4 text-xs font-medium hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        {refining === action ? (
+                          <span className="animate-spin mr-2">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          </span>
+                        ) : null}
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Custom Refine Input */}
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <input
                     type="text"
                     value={customRefineText}
@@ -855,7 +880,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                     }}
                     placeholder="z.B. Mehr Emojis hinzufügen..."
                     disabled={!!refining || loading}
-                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                    className="flex-1 h-11 rounded-xl glass-input px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
                   />
                   <button
                     onClick={() => {
@@ -865,11 +890,11 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                       }
                     }}
                     disabled={!customRefineText.trim() || !!refining || loading}
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4"
+                    className="glass-button h-11 px-6 text-sm font-medium whitespace-nowrap hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {refining === 'custom' ? (
-                      <span className="animate-spin mr-1">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24">
+                      <span className="animate-spin mr-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
@@ -880,25 +905,25 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                 </div>
 
                 {/* Primary Actions */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-4 pt-2">
                   <button
                     onClick={handleCopy}
                     disabled={!!refining}
-                    className={`flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 ${copied
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    className={`flex-1 flex items-center justify-center rounded-xl text-sm font-semibold shadow-lg transition-all duration-300 h-12 px-6 ${copied
+                      ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/30'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]'
                       }`}
                   >
                     {copied ? (
                       <>
-                        <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                         Kopiert!
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                         Kopieren
@@ -908,7 +933,7 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
                   <button
                     onClick={handleReset}
                     disabled={!!refining}
-                    className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                    className="flex-1 flex items-center justify-center rounded-xl text-sm font-medium glass-button h-12 px-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all duration-300"
                   >
                     Neu starten
                   </button>

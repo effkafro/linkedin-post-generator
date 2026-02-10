@@ -55,12 +55,12 @@ function AppContent() {
     : undefined
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className="relative text-foreground transition-colors duration-300">
       {/* Top bar with toggle buttons */}
       <div className="fixed top-4 left-4 z-50 lg:hidden">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-2 rounded-md bg-card border border-border text-foreground hover:bg-accent transition-colors"
+          className="p-2 rounded-xl glass-panel text-foreground hover:bg-white/10 transition-colors"
           aria-label="Verlauf öffnen"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,13 +69,13 @@ function AppContent() {
         </button>
       </div>
 
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
         <UserMenu onLoginClick={() => setAuthModalOpen(true)} />
         <ModeToggle />
       </div>
 
       {/* Main layout */}
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen p-4 lg:p-6 gap-6">
         {/* Sidebar */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}>
           <PostHistory
@@ -87,7 +87,7 @@ function AppContent() {
         </Sidebar>
 
         {/* Main content */}
-        <main className="flex-1 lg:ml-0">
+        <main className="flex-1 lg:ml-0 w-full max-w-5xl mx-auto flex flex-col">
           <PostGenerator
             key={selectedHistoryItem?.id}
             initialState={initialState}
