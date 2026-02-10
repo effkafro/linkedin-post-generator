@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { InputMode, SourceInfo, JobConfig } from '../types/history'
+import type { InputMode, SourceInfo, JobConfig, SerializedPostVersion } from '../types/history'
 
 export type Tone = 'professional' | 'casual' | 'inspirational' | 'educational'
 export type Style = 'story' | 'listicle' | 'question-hook' | 'bold-statement'
@@ -19,7 +19,7 @@ interface GenerateParams {
   jobConfig?: JobConfig
 }
 
-interface PostVersion {
+export interface PostVersion {
   id: string
   content: string
   timestamp: Date
@@ -40,6 +40,8 @@ interface UsePostGeneratorReturn {
   goToVersion: (index: number) => void
   reset: () => void
   loadContent: (content: string, source?: SourceInfo) => void
+  loadVersions: (serialized: SerializedPostVersion[]) => void
+  getSerializedVersions: () => SerializedPostVersion[]
 }
 
 const REFINE_PROMPTS: Record<Exclude<RefineAction, 'custom'>, string> = {
@@ -226,6 +228,30 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     setError(null)
   }, [])
 
+  const loadVersions = useCallback((serialized: SerializedPostVersion[]) => {
+    if (serialized.length === 0) return
+    const restored: PostVersion[] = serialized.map(v => ({
+      id: v.id,
+      content: v.content,
+      timestamp: new Date(v.timestamp),
+      action: v.action,
+      source: v.source,
+    }))
+    setVersions(restored)
+    setCurrentIndex(restored.length - 1)
+    setError(null)
+  }, [])
+
+  const getSerializedVersions = useCallback((): SerializedPostVersion[] => {
+    return versions.map(v => ({
+      id: v.id,
+      content: v.content,
+      timestamp: v.timestamp.toISOString(),
+      action: v.action,
+      source: v.source,
+    }))
+  }, [versions])
+
   return {
     output,
     loading,
@@ -238,6 +264,8 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     refine,
     goToVersion,
     reset,
-    loadContent
+    loadContent,
+    loadVersions,
+    getSerializedVersions
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePostGenerator, type Tone, type Style, type Language, type RefineAction, type JobSubStyle, type CandidatePersona, type Industry } from '../hooks/usePostGenerator'
-import type { InputMode, SourceInfo, JobConfig } from '../types/history'
+import type { InputMode, SourceInfo, JobConfig, SerializedPostVersion } from '../types/history'
 
 const TONE_DESCRIPTIONS: Record<Tone, string> = {
   professional: 'Seriös, fachlich, business-orientiert. Branchenjargon erlaubt.',
@@ -51,6 +51,7 @@ export interface PostGeneratorProps {
     style: Style
     language: Language
     content: string
+    versions?: SerializedPostVersion[]
   }
   onPostGenerated?: (data: {
     mode: InputMode
@@ -62,7 +63,9 @@ export interface PostGeneratorProps {
     style: Style
     language: Language
     content: string
+    versions?: SerializedPostVersion[]
   }) => void
+  onVersionsChange?: (data: { versions: SerializedPostVersion[], content: string } | null) => void
 }
 
 const TONE_OPTIONS: { value: Tone; label: string }[] = [
@@ -116,7 +119,7 @@ const formatTextInteractive = (text: string): string => {
     .replace(/\n/g, '<br/>')
 }
 
-export default function PostGenerator({ initialState, onPostGenerated }: PostGeneratorProps) {
+export default function PostGenerator({ initialState, onPostGenerated, onVersionsChange }: PostGeneratorProps) {
   const [mode, setMode] = useState<InputMode>(initialState?.mode ?? 'topic')
   const [topic, setTopic] = useState(initialState?.topic ?? '')
   const [url, setUrl] = useState(initialState?.url ?? '')
@@ -141,7 +144,9 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
     refine,
     goToVersion,
     reset,
-    loadContent
+    loadContent,
+    loadVersions,
+    getSerializedVersions
   } = usePostGenerator()
 
   // Track if we're restoring from history (don't save restored items)
@@ -159,9 +164,13 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
       setTone(initialState.tone)
       setStyle(initialState.style)
       setLanguage(initialState.language ?? 'de')
-      loadContent(initialState.content, initialState.source)
+      if (initialState.versions && initialState.versions.length > 0) {
+        loadVersions(initialState.versions)
+      } else {
+        loadContent(initialState.content, initialState.source)
+      }
     }
-  }, [initialState, loadContent])
+  }, [initialState, loadContent, loadVersions])
 
   const handleGenerate = async () => {
     isRestoringRef.current = false
@@ -192,11 +201,22 @@ export default function PostGenerator({ initialState, onPostGenerated }: PostGen
           tone,
           style,
           language,
-          content: output
+          content: output,
+          versions: getSerializedVersions(),
         })
       }
     }
   }, [output, loading, versions, mode, topic, url, jobConfig, source, tone, style, language, onPostGenerated])
+
+  // Report version changes to parent
+  useEffect(() => {
+    if (!onVersionsChange) return
+    if (versions.length > 0 && output) {
+      onVersionsChange({ versions: getSerializedVersions(), content: output })
+    } else {
+      onVersionsChange(null)
+    }
+  }, [versions, output, onVersionsChange, getSerializedVersions])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(output)

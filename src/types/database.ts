@@ -81,6 +81,7 @@ export interface Database {
           language: string
           content: string
           char_count: number | null
+          versions: Json[] | null
           created_at: string
         }
         Insert: {
@@ -96,6 +97,7 @@ export interface Database {
           language?: string
           content: string
           char_count?: number | null
+          versions?: Json[] | null
           created_at?: string
         }
         Update: {
@@ -111,6 +113,7 @@ export interface Database {
           language?: string
           content?: string
           char_count?: number | null
+          versions?: Json[] | null
           created_at?: string
         }
       }

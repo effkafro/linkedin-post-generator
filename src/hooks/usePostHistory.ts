@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import type { HistoryItem, InputMode, SourceInfo, JobConfig } from '../types/history'
+import type { HistoryItem, InputMode, SourceInfo, JobConfig, SerializedPostVersion } from '../types/history'
 import type { Tone, Style, Language } from './usePostGenerator'
 import type { Database } from '../types/database'
 
@@ -21,6 +21,7 @@ interface PostRow {
   language: string
   content: string
   char_count: number | null
+  versions: unknown
   created_at: string
 }
 
@@ -88,6 +89,7 @@ export function usePostHistory() {
     content: post.content,
     createdAt: post.created_at,
     charCount: post.char_count || post.content.length,
+    versions: Array.isArray(post.versions) ? post.versions as SerializedPostVersion[] : undefined,
   }), [])
 
   // Load history based on auth state
@@ -198,6 +200,7 @@ export function usePostHistory() {
       language: item.language,
       content: item.content,
       char_count: item.charCount,
+      versions: item.versions ?? null,
       created_at: item.createdAt,
     }))
 
@@ -220,6 +223,7 @@ export function usePostHistory() {
     style: Style
     language: Language
     content: string
+    versions?: SerializedPostVersion[]
   }): Promise<HistoryItem | null> => {
     let newItem: HistoryItem = {
       id: crypto.randomUUID(),
@@ -235,6 +239,7 @@ export function usePostHistory() {
       content: item.content,
       createdAt: new Date().toISOString(),
       charCount: item.content.length,
+      versions: item.versions,
     }
 
     // Optimistic update
@@ -262,6 +267,7 @@ export function usePostHistory() {
         language: item.language,
         content: item.content,
         char_count: item.content.length,
+        versions: item.versions ?? null,
       }
 
       // Type assertion needed due to Supabase client generic inference issue
@@ -291,6 +297,42 @@ export function usePostHistory() {
     }
 
     return newItem
+  }, [user])
+
+  const updateHistoryItem = useCallback(async (id: string, updates: {
+    content?: string
+    charCount?: number
+    versions?: SerializedPostVersion[]
+  }) => {
+    // Optimistic update
+    setHistory(prev => prev.map(item => {
+      if (item.id !== id) return item
+      return {
+        ...item,
+        ...(updates.content !== undefined && { content: updates.content }),
+        ...(updates.charCount !== undefined && { charCount: updates.charCount }),
+        ...(updates.versions !== undefined && { versions: updates.versions }),
+      }
+    }))
+
+    // If logged in, update in Supabase
+    const client = getClient()
+    if (user && client) {
+      const dbUpdates: Record<string, unknown> = {}
+      if (updates.content !== undefined) dbUpdates.content = updates.content
+      if (updates.charCount !== undefined) dbUpdates.char_count = updates.charCount
+      if (updates.versions !== undefined) dbUpdates.versions = updates.versions
+
+      const { error } = await client
+        .from('posts')
+        .update(dbUpdates as never)
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error updating post in Supabase:', error)
+      }
+    }
   }, [user])
 
   const removeFromHistory = useCallback(async (id: string) => {
@@ -334,6 +376,7 @@ export function usePostHistory() {
     history,
     loading,
     addToHistory,
+    updateHistoryItem,
     removeFromHistory,
     clearHistory,
   }

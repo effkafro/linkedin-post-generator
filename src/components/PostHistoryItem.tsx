@@ -77,6 +77,14 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
         <span>{formatRelativeTime(item.createdAt)}</span>
         <span className="w-1 h-1 rounded-full bg-border"></span>
         <span>{item.charCount} Zeichen</span>
+        {item.versions && item.versions.length > 1 && (
+          <>
+            <span className="w-1 h-1 rounded-full bg-border"></span>
+            <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold">
+              {item.versions.length} Versionen
+            </span>
+          </>
+        )}
       </div>
     </div>
   )
