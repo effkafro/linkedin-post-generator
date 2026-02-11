@@ -1,289 +1,80 @@
-# Changelog - LinkedIn Post Generator
+# Changelog - Content Creator Pro
 
-## [2.0.0] - Phase 1: SaaS Foundation + Job-Posting Mode
+## [3.0.0] - Codebase Restructuring & Voice Profile System
 
-### Übersicht
-Diese Version erweitert den LinkedIn Post Generator um:
-1. **Supabase-Integration** für Auth und Cloud-Storage
-2. **Job-Posting Mode** für Recruiter/HR-Teams
-3. **User Authentication** mit Email/Password und OAuth
+### Architektur-Refactoring
+- **PostGenerator.tsx zerlegt:** 968-Zeilen-Monolith in ~12 fokussierte Komponenten aufgeteilt
+  - `PostWorkspace.tsx` als Orchestrator (~140 Zeilen)
+  - `input/`: InputPanel, ModeTabs, TopicInput, UrlInput, JobInput, SettingsRow, GenerateButton
+  - `output/`: OutputPanel, PostDisplay, VersionNav, RefinePanel, ActionBar
+  - `shared/`: GlassSelect, HelpModal
+- **Type-System zentralisiert:** Zirkuläre Dependencies aufgelöst
+  - `types/post.ts`, `types/job.ts`, `types/source.ts`, `types/profile.ts`
+- **Constants extrahiert:** Inline-Definitionen in eigene Dateien
+  - `constants/tone.ts`, `style.ts`, `language.ts`, `job.ts`, `refine.ts`, `modes.ts`, `platform.ts`
+- **Utils extrahiert:** `formatText.ts`, `urlValidation.ts`, `hashContent.ts`
+- **Storage Adapter Pattern:** `usePostHistory` von 395 auf ~140 Zeilen reduziert
+  - `lib/storage/localStorageAdapter.ts` + `supabaseStorageAdapter.ts`
+- **Layout reorganisiert:** Komponenten nach Feature gruppiert
+  - `layout/`: AppShell, Sidebar, TopBar
+  - `auth/`: AuthModal, UserMenu
+  - `theme/`: theme-provider, mode-toggle
+  - `history/`: PostHistory, PostHistoryItem
+  - `profile/`: ProfilePage, ProfileForm, VoiceSettings, ExamplePosts, ProfileCompleteness
 
----
+### Voice Training Profil-System (NEU)
+- **VoiceProfile:** Name, Jobtitel, Firma, Branche, Bio, Expertise, Tonalität, Zielgruppe, Werte
+- **ExamplePosts:** Beispiel-Posts mit Performance-Notizen hochladen
+- **ProfileCompleteness:** Farbcodierte Fortschrittsanzeige
+- **Supabase Migration:** `voice_profiles` + `example_posts` Tabellen mit RLS
+- **ProfileContext:** State-Management für Profildaten
+- **Zugang:** UserMenu > "Mein Profil"
 
-## Neue Features
+### Auth-Verbesserungen
+- **Auto-Profil-Erstellung:** `fetchOrCreateProfile` erstellt automatisch `profiles`-Eintrag beim ersten Login
+- **Race Condition Fix:** `onAuthStateChange` als Single Source of Truth (ersetzt `getSession()`)
+- **TopBar Fixed Positioning:** Controls immer sichtbar (z-50)
 
-### 1. Authentifizierung (Supabase Auth)
-- **Email/Password Login** - Klassische Registrierung und Anmeldung
-- **OAuth Support** - Google und LinkedIn Login vorbereitet
-- **User Profile** - Plan-Anzeige, Posts-Counter, Avatar
-- **Session Management** - Automatische Session-Persistenz
+### Naming & Multi-Platform
+- Header: "LinkedIn Post Generator" → "Content Creator"
+- `platform.ts` Constants für zukünftige Multi-Platform-Unterstützung
+- SOP umbenannt: `linkedin_post_generator_sop.md` → `content_creator_sop.md`
 
-### 2. Cloud History (Supabase Database)
-- **Cross-Device Sync** - Posts werden in der Cloud gespeichert
-- **Automatische Migration** - Lokale Posts werden bei erstem Login hochgeladen
-- **Fallback auf localStorage** - Funktioniert auch ohne Login
-- **Row Level Security** - User sehen nur eigene Daten
-
-### 3. Job-Posting Mode (Recruiter-Features)
-- **Zwei Eingabe-Modi:**
-  - Mit URL: Stellenausschreibung wird gescrapt
-  - Manuell: Jobtitel, Firma, Benefits, Requirements eingeben
-- **Job-Sub-Stile:**
-  - "Wir suchen" - Klassisch, direkt
-  - "Kennt ihr jemanden?" - Netzwerk aktivieren
-  - "Persönliche Empfehlung" - Storytelling
-  - "Opportunity Pitch" - Benefits-fokussiert
-- **Candidate Persona:**
-  - Junior / Berufseinsteiger
-  - Senior / Erfahren
-  - C-Level / Management
-  - Freelancer / Consultant
-- **Zusätzliche Optionen:**
-  - Branche (Tech, Finance, Healthcare, etc.)
-  - Standort
-  - Remote möglich (Toggle)
-
----
-
-## Neue Dateien
-
-### Frontend (src/)
-
-#### `src/lib/supabase.ts`
-Supabase Client Initialisierung mit optionaler Konfiguration.
-```typescript
-export const supabase = createSupabaseClient()
-export const isSupabaseConfigured = !!supabase
-```
-
-#### `src/contexts/AuthContext.tsx`
-React Context für Authentication State Management.
-- `user` - Aktueller User oder null
-- `profile` - User-Profil mit Plan und Stats
-- `signIn()`, `signUp()`, `signOut()`
-- `signInWithOAuth()` - Google/LinkedIn
-
-#### `src/components/AuthModal.tsx`
-Login/Register Modal mit:
-- OAuth Buttons (Google, LinkedIn)
-- Email/Password Formular
-- Registrierung mit Name
-- Error/Success Messages
-
-#### `src/components/UserMenu.tsx`
-Dropdown-Menü für eingeloggte User:
-- Avatar/Initials
-- Plan-Badge (Free, Pro, etc.)
-- Posts-Counter mit Limit-Anzeige
-- Upgrade-Button (Free Users)
-- Logout-Button
-
-#### `src/types/database.ts`
-TypeScript-Typen für Supabase Database:
-- `Database` - Vollständiges DB-Schema
-- `PostRow`, `ProfileRow` - Tabellen-Typen
-- `JobConfig`, `SourceInfo` - JSON-Felder
-- `JobSubStyle`, `CandidatePersona`, `Industry`
-
-### Backend (supabase/)
-
-#### `supabase/schema.sql`
-Vollständiges Datenbank-Schema:
-```sql
--- Profiles (extends auth.users)
-CREATE TABLE profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id),
-  email TEXT,
-  full_name TEXT,
-  avatar_url TEXT,
-  plan TEXT DEFAULT 'free',
-  posts_this_month INTEGER DEFAULT 0,
-  ...
-);
-
--- Posts
-CREATE TABLE posts (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id),
-  mode TEXT NOT NULL,  -- 'topic' | 'url' | 'job'
-  topic TEXT,
-  url TEXT,
-  source JSONB,
-  job_config JSONB,
-  tone TEXT NOT NULL,
-  style TEXT NOT NULL,
-  language TEXT DEFAULT 'de',
-  content TEXT NOT NULL,
-  ...
-);
-```
-
-### Konfiguration
-
-#### `.env.example`
-Template für Environment Variables:
-```
-VITE_WEBHOOK_URL=https://...
-VITE_SUPABASE_URL=https://...
-VITE_SUPABASE_ANON_KEY=...
-```
+### Entfernt
+- `ChatWindow.tsx` / `useChat.ts` — Redundant zur Freitext-Verfeinerung
+- `PostGenerator.tsx` — Ersetzt durch modulare Komponenten
 
 ---
 
-## Geänderte Dateien
+## [2.0.0] - SaaS Foundation + Job-Posting Mode
 
-### `src/App.tsx`
-- **Struktur geändert:** `AppContent` Komponente für Hooks
-- **AuthProvider** umschließt jetzt die gesamte App
-- **UserMenu** in der Top-Bar hinzugefügt
-- **AuthModal** für Login/Register
+### Neue Features
+- **Supabase Auth:** Email/Password Login, OAuth (Google, LinkedIn) vorbereitet
+- **Cloud History:** Cross-Device Sync mit automatischer localStorage-Migration
+- **Job-Posting Mode:** Optimierte Posts für Stellenausschreibungen
+  - Mit URL (Scraping) oder manuelle Eingabe
+  - Sub-Stile: "Wir suchen", "Kennt ihr jemanden?", "Persönliche Empfehlung", "Opportunity Pitch"
+  - Candidate Persona: Junior, Senior, C-Level, Freelancer
+  - Branche, Standort, Remote-Option
+- **UserMenu:** Plan-Badge, Posts-Counter, Upgrade-Button
 
-### `src/hooks/usePostHistory.ts`
-- **Supabase-Integration:** Sync mit Cloud wenn eingeloggt
-- **Automatische Migration:** localStorage → Cloud bei Login
-- **Optimistic Updates:** Sofortige UI-Updates
-- **Fallback:** localStorage wenn nicht eingeloggt
-
-### `src/hooks/usePostGenerator.ts`
-- **Neue Typen:** `JobSubStyle`, `CandidatePersona`, `Industry`
-- **Job-Mode Validierung:** Prüft jobConfig Parameter
-- **Erweiterte generate():** Sendet jobConfig an Webhook
-
-### `src/components/PostGenerator.tsx`
-- **Neuer Tab "Job"** neben Thema und URL
-- **Job-Formular:**
-  - Toggle "Stellenausschreibung vorhanden?"
-  - URL-Input oder manuelle Felder
-  - Job-Sub-Stil Dropdown
-  - Candidate Persona Dropdown
-  - Branche, Standort, Remote-Toggle
-- **Erweiterte Props:** jobConfig in initialState und onPostGenerated
-
-### `src/types/history.ts`
-- **Neuer Mode:** `'job'` hinzugefügt
-- **JobConfig Interface:** Alle Job-spezifischen Felder
-- **Re-exports:** JobSubStyle, CandidatePersona, Industry
-
-### `linkedin_post_generator_sop.md`
-- **Job-Mode Dokumentation:** User Flow, Sub-Stile, Personas
-- **Webhook-Spec erweitert:** jobConfig Parameter
-- **System-Prompts:** Job URL und Job Manual Prompts
-- **Supabase-Architektur:** Schema, RLS, Auth States
-
-### `n8n/linkedin_post_generator.json`
-- **Neuer Switch-Case:** `mode === 'job'`
-- **Switch Job Type:** hasExistingPosting true/false
-- **Job URL Pfad:** Fetch → Extract → Set → LLM → Respond
-- **Job Manual Pfad:** Set → LLM → Respond
-- **Neue LLM Nodes:** Chain LLM (Job URL), Chain LLM (Job Manual)
-- **Job-spezifische Prompts:** Mit Stil/Persona/Branche Anpassungen
+### Datenbank
+- `profiles` Tabelle (User-Profil, Plan, Stats)
+- `posts` Tabelle (generierte Inhalte, History)
+- Row Level Security für alle Tabellen
 
 ---
 
-## Architektur-Diagramm
+## [1.0.0] - Initial Release
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend                              │
-├─────────────────────────────────────────────────────────────┤
-│  App.tsx                                                     │
-│    └── AuthProvider (Context)                                │
-│         └── ThemeProvider                                    │
-│              └── AppContent                                  │
-│                   ├── UserMenu ←── useAuth()                 │
-│                   ├── Sidebar                                │
-│                   │    └── PostHistory ←── usePostHistory()  │
-│                   ├── PostGenerator ←── usePostGenerator()   │
-│                   └── AuthModal                              │
-├─────────────────────────────────────────────────────────────┤
-│  Hooks                                                       │
-│    ├── useAuth() ←── Supabase Auth                          │
-│    ├── usePostHistory() ←── Supabase DB / localStorage      │
-│    └── usePostGenerator() ←── n8n Webhook                   │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      n8n Workflow                            │
-├─────────────────────────────────────────────────────────────┤
-│  Webhook                                                     │
-│    └── Switch Mode                                           │
-│         ├── [url] → Fetch → Extract → LLM → Respond         │
-│         ├── [topic] → LLM → Respond                         │
-│         └── [job] → Switch Job Type                         │
-│                      ├── [URL] → Fetch → Extract → LLM      │
-│                      └── [Manual] → Set → LLM → Respond     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                        Supabase                              │
-├─────────────────────────────────────────────────────────────┤
-│  Auth                                                        │
-│    ├── Email/Password                                        │
-│    └── OAuth (Google, LinkedIn)                              │
-│                                                              │
-│  Database                                                    │
-│    ├── profiles (user data, plan, stats)                    │
-│    └── posts (generated content, history)                   │
-│                                                              │
-│  Row Level Security                                          │
-│    └── Users see only their own data                        │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Setup-Anleitung
-
-### 1. Supabase Projekt erstellen
-1. Gehe zu https://supabase.com und erstelle ein neues Projekt
-2. Kopiere die Project URL und den anon key
-
-### 2. Datenbank-Schema anwenden
-1. Gehe zu SQL Editor in Supabase
-2. Füge den Inhalt von `supabase/schema.sql` ein
-3. Führe das SQL aus
-
-### 3. Environment Variables setzen
-```bash
-# .env.local
-VITE_WEBHOOK_URL=https://dein-n8n.com/webhook/linkedin-post-generator
-VITE_SUPABASE_URL=https://dein-projekt.supabase.co
-VITE_SUPABASE_ANON_KEY=dein-anon-key
-```
-
-### 4. n8n Workflow importieren
-1. Öffne n8n
-2. Importiere `n8n/linkedin_post_generator.json`
-3. Konfiguriere die OpenRouter Credentials
-4. Aktiviere den Workflow
-
-### 5. App starten
-```bash
-npm install
-npm run dev
-```
-
----
-
-## Pricing-Modell (vorbereitet)
-
-| Plan | Posts/Monat | Features |
-|------|-------------|----------|
-| Free | 5 | Basis-Features |
-| Creator | 50 | Cloud Sync, Alle Stile |
-| Pro | Unlimited | Direct Publish, Analytics |
-| Team | Unlimited | Collaboration, Approval |
-| Agency | Unlimited | White-Label, API |
-
----
-
-## Nächste Schritte (Phase 2+)
-
-1. **Stripe Integration** - Billing für Pro/Team Plans
-2. **Voice Training** - Eigenen Schreibstil trainieren
-3. **Brand Profiles** - Mehrere Kunden/Marken verwalten
-4. **LinkedIn API** - Direct Publish, Scheduling
-5. **Analytics Dashboard** - Engagement-Statistiken
-6. **Team Workspaces** - Multi-User Collaboration
+### Features
+- Post-Generierung via n8n Webhook + LLM
+- 3 Input-Modi: Thema, URL, Job
+- 4 Tone-Optionen: Professional, Casual, Inspirational, Educational
+- 4 Style-Optionen: Story, Listicle, Question-Hook, Bold-Statement
+- 5 Sprachen: DE, EN, FR, ES, IT
+- Refine: Kürzer, Länger, Formeller, Lockerer, Custom
+- Version History mit Navigation
+- Post History Sidebar (localStorage)
+- Dark/Light Mode
+- Responsive Design (Mobile-first)

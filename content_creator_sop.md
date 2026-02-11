@@ -637,7 +637,7 @@ interface JobConfig {
 #### Post Workspace
 - **PostWorkspace:** Orchestrator - verwaltet Form-State, delegiert an Input/Output
 - **InputPanel:** ModeTabs + aktives Input-Form + SettingsRow + GenerateButton
-- **OutputPanel:** PostDisplay + VersionNav + RefinePanel + ActionBar + ChatPanel
+- **OutputPanel:** PostDisplay + VersionNav + RefinePanel + ActionBar
 
 #### History Sidebar
 - **PostHistory:** Header mit "Verlauf", "Neuer Post"-Button, Clear All, scrollbare Liste
