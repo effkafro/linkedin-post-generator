@@ -16,6 +16,12 @@ KI-gestützte Generierung professioneller LinkedIn-Posts mit verschiedenen Töne
 - **Zielgruppen:** Junior, Senior, C-Level, Freelancer
 - **Optionen:** Branche, Standort, Remote-Toggle
 
+### Voice Training Profil
+- Persoenliches Profil hinterlegen (Name, Rolle, Expertise, Werte, Zielgruppe)
+- Beispiel-Posts hochladen fuer Stil-Analyse
+- Toggle "Mein Profil als Kontext verwenden" bei der Post-Generierung
+- KI schreibt in deiner Stimme und Perspektive
+
 ### Cloud Features (optional)
 - User-Authentifizierung (Email/Password, Google, LinkedIn)
 - Post-History in der Cloud synchronisiert
@@ -88,24 +94,33 @@ Kopiere Project URL und anon key in `.env.local`
 ```
 src/
 ├── components/
-│   ├── PostGenerator.tsx    # Haupt-Formular
-│   ├── PostHistory.tsx      # History-Liste
-│   ├── AuthModal.tsx        # Login/Register
-│   └── UserMenu.tsx         # User-Dropdown
+│   ├── layout/              # AppShell, Sidebar, TopBar
+│   ├── auth/                # AuthModal, UserMenu
+│   ├── theme/               # theme-provider, mode-toggle
+│   ├── post/
+│   │   ├── PostWorkspace.tsx # Orchestrator
+│   │   ├── input/           # InputPanel, ModeTabs, TopicInput, UrlInput, JobInput, SettingsRow
+│   │   ├── output/          # OutputPanel, PostDisplay, VersionNav, RefinePanel, ActionBar
+│   │   └── shared/          # GlassSelect, HelpModal
+│   ├── history/             # PostHistory, PostHistoryItem
+│   └── profile/             # ProfilePage, ProfileForm, VoiceSettings, ExamplePosts
 ├── contexts/
-│   └── AuthContext.tsx      # Auth State
+│   ├── AuthContext.tsx       # Auth State + Methods
+│   └── ProfileContext.tsx    # Voice Profile State
 ├── hooks/
-│   ├── usePostGenerator.ts  # Post-Generierung
-│   └── usePostHistory.ts    # History (Cloud/Local)
+│   ├── usePostGenerator.ts   # Post-Generierung + Versioning
+│   ├── usePostHistory.ts     # History CRUD (Storage Adapters)
+│   └── useProfile.ts         # Profile CRUD (optimistic + debounced)
+├── types/                    # Zentrales Type-System (post, job, source, profile, history)
+├── constants/                # Konfiguration (tone, style, language, job, refine)
+├── utils/                    # Pure Functions (formatText, urlValidation, buildProfilePayload)
 ├── lib/
-│   └── supabase.ts          # Supabase Client
-├── types/
-│   ├── history.ts           # History Types
-│   └── database.ts          # Supabase Types
-└── App.tsx                  # Main App
+│   ├── supabase.ts           # Supabase Client
+│   └── storage/              # Storage Adapter Pattern
+└── App.tsx                   # Providers + AppShell
 
 n8n/
-└── linkedin_post_generator.json  # n8n Workflow
+└── linkedin_post_generator.json  # n8n Workflow (inkl. Build Profile Context Node)
 
 supabase/
 └── schema.sql               # DB Schema + RLS
@@ -122,13 +137,13 @@ npm run lint     # ESLint
 
 ## Dokumentation
 
-- **SOP:** `linkedin_post_generator_sop.md` - Vollständige Spezifikation
+- **SOP:** `content_creator_sop.md` - Vollstaendige Spezifikation
 - **Changelog:** `CHANGELOG.md` - Alle Änderungen
 
 ## Roadmap
 
 - [ ] Stripe Integration (Billing)
-- [ ] Voice Training (eigener Schreibstil)
+- [x] Voice Training (eigener Schreibstil)
 - [ ] Brand Profiles (mehrere Kunden)
 - [ ] LinkedIn API (Direct Publish)
 - [ ] Team Workspaces

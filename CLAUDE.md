@@ -18,7 +18,7 @@ Du bist ein Senior Fullstack Developer und n8n Architect. Du erweiterst und wart
   - `contexts/`: AuthContext, ProfileContext
   - `types/`: Zentrales Type-System (post, job, source, profile, history, database)
   - `constants/`: Konfiguration (tone, style, language, job, refine, modes, platform)
-  - `utils/`: Pure Utility Functions (formatText, urlValidation, hashContent)
+  - `utils/`: Pure Utility Functions (formatText, urlValidation, hashContent, buildProfilePayload)
   - `lib/`: Supabase Client, API, Storage Adapters
 - **.env.local**: Webhook-URL + Supabase Konfiguration (VITE_* Variablen)
 

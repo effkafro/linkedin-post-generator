@@ -13,9 +13,13 @@ interface SettingsRowProps {
   onToneChange: (tone: Tone) => void
   onStyleChange: (style: Style) => void
   onLanguageChange: (language: Language) => void
+  useProfile: boolean
+  onUseProfileChange: (enabled: boolean) => void
+  profileAvailable: boolean
+  profileCompleteness: number
 }
 
-export default function SettingsRow({ tone, style, language, onToneChange, onStyleChange, onLanguageChange }: SettingsRowProps) {
+export default function SettingsRow({ tone, style, language, onToneChange, onStyleChange, onLanguageChange, useProfile, onUseProfileChange, profileAvailable, profileCompleteness }: SettingsRowProps) {
   const [showToneHelp, setShowToneHelp] = useState(false)
   const [showStyleHelp, setShowStyleHelp] = useState(false)
 
@@ -81,6 +85,37 @@ export default function SettingsRow({ tone, style, language, onToneChange, onSty
           <GlassSelect id="language" value={language} onChange={onLanguageChange} options={LANGUAGE_OPTIONS} />
         </div>
       </div>
+
+      {profileAvailable && (
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={useProfile}
+            onClick={() => onUseProfileChange(!useProfile)}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              useProfile ? 'bg-primary' : 'bg-muted-foreground/30'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ${
+                useProfile ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <label
+            className="text-sm font-medium text-foreground/80 cursor-pointer select-none"
+            onClick={() => onUseProfileChange(!useProfile)}
+          >
+            Mein Profil als Kontext verwenden
+          </label>
+          {useProfile && profileCompleteness < 50 && (
+            <span className="text-xs text-amber-500/90">
+              Profil nur {profileCompleteness}% ausgefuellt
+            </span>
+          )}
+        </div>
+      )}
 
       {showToneHelp && (
         <HelpModal

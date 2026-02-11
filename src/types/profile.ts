@@ -32,3 +32,16 @@ export interface ExamplePost {
   performance_notes?: string
   created_at: string
 }
+
+export interface ProfilePayload {
+  full_name: string
+  job_title: string
+  company: string
+  expertise_topics: string[]
+  target_audience: string
+  positioning_statement: string
+  personal_values: string[]
+  tone_preferences: string[]
+  preferred_emojis: 'none' | 'minimal' | 'moderate'
+  example_posts: string[]
+}

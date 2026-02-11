@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import type { VoiceProfile, ExamplePost } from '../types/profile'
@@ -72,25 +72,44 @@ export function useProfile(): UseProfileReturn {
     load()
   }, [user])
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingUpdatesRef = useRef<Partial<VoiceProfile>>({})
+  const profileIdRef = useRef<string | null>(null)
+
+  // Keep profileId ref in sync for the unmount cleanup
+  useEffect(() => {
+    profileIdRef.current = profile?.id ?? null
+  }, [profile?.id])
+
   const updateProfile = useCallback(async (updates: Partial<VoiceProfile>) => {
     if (!user || !supabase) return
-    setSaving(true)
 
-    try {
-      if (profile) {
-        // Update existing
-        const { data } = await supabase
-          .from('voice_profiles')
-          .update({ ...updates, updated_at: new Date().toISOString() } as never)
-          .eq('id', profile.id)
-          .select()
-          .single()
+    if (profile) {
+      // Optimistic local update - no saving/disabled state
+      setProfile(prev => prev ? { ...prev, ...updates } : prev)
 
-        if (data) {
-          setProfile(data as unknown as VoiceProfile)
+      // Accumulate pending updates and debounce the DB write
+      pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates }
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(async () => {
+        const pending = pendingUpdatesRef.current
+        pendingUpdatesRef.current = {}
+        setSaving(true)
+        try {
+          await supabase!
+            .from('voice_profiles')
+            .update({ ...pending, updated_at: new Date().toISOString() } as never)
+            .eq('id', profile.id)
+        } catch (err) {
+          console.error('Error saving profile:', err)
+        } finally {
+          setSaving(false)
         }
-      } else {
-        // Create new
+      }, 500)
+    } else {
+      // Create new profile - this needs to be immediate
+      setSaving(true)
+      try {
         const newProfile = {
           user_id: user.id,
           full_name: '',
@@ -119,13 +138,31 @@ export function useProfile(): UseProfileReturn {
         if (data) {
           setProfile(data as unknown as VoiceProfile)
         }
+      } catch (err) {
+        console.error('Error creating profile:', err)
+      } finally {
+        setSaving(false)
       }
-    } catch (err) {
-      console.error('Error saving profile:', err)
-    } finally {
-      setSaving(false)
     }
   }, [user, profile])
+
+  // Flush pending updates only on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        const pending = pendingUpdatesRef.current
+        const id = profileIdRef.current
+        if (id && Object.keys(pending).length > 0 && supabase) {
+          supabase
+            .from('voice_profiles')
+            .update({ ...pending, updated_at: new Date().toISOString() } as never)
+            .eq('id', id)
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const addExamplePost = useCallback(async (content: string, performanceNotes?: string) => {
     if (!profile || !supabase) return

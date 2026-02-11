@@ -2,15 +2,13 @@ import type { VoiceProfile } from '../../types/profile'
 
 interface VoiceSettingsProps {
   profile: VoiceProfile | null
-  saving: boolean
   onUpdate: (updates: Partial<VoiceProfile>) => Promise<void>
 }
 
-function TagInput({ value, onChange, placeholder, disabled }: {
+function TagInput({ value, onChange, placeholder }: {
   value: string[]
   onChange: (tags: string[]) => void
   placeholder: string
-  disabled: boolean
 }) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -33,7 +31,6 @@ function TagInput({ value, onChange, placeholder, disabled }: {
             <button
               onClick={() => onChange(value.filter(t => t !== tag))}
               className="hover:text-destructive transition-colors"
-              disabled={disabled}
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -46,14 +43,13 @@ function TagInput({ value, onChange, placeholder, disabled }: {
         type="text"
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={disabled}
-        className="flex w-full h-10 rounded-xl glass-input px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all disabled:opacity-50"
+        className="flex w-full h-10 rounded-xl glass-input px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
       />
     </div>
   )
 }
 
-export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettingsProps) {
+export default function VoiceSettings({ profile, onUpdate }: VoiceSettingsProps) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold">Voice & Positionierung</h3>
@@ -66,7 +62,6 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
           value={profile?.expertise_topics || []}
           onChange={tags => onUpdate({ expertise_topics: tags })}
           placeholder="z.B. KI, Leadership, SaaS (Enter zum Hinzufügen)"
-          disabled={saving}
         />
       </div>
 
@@ -78,7 +73,6 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
           value={profile?.tone_preferences || []}
           onChange={tags => onUpdate({ tone_preferences: tags })}
           placeholder="z.B. casual, educational, inspirierend"
-          disabled={saving}
         />
       </div>
 
@@ -92,8 +86,7 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
           value={profile?.target_audience || ''}
           onChange={e => onUpdate({ target_audience: e.target.value })}
           placeholder="z.B. CTOs und Engineering-Leads in Tech-Startups"
-          disabled={saving}
-          className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all disabled:opacity-50"
+          className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
         />
       </div>
 
@@ -105,7 +98,6 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
           value={profile?.personal_values || []}
           onChange={tags => onUpdate({ personal_values: tags })}
           placeholder="z.B. Transparenz, Innovation, Nachhaltigkeit"
-          disabled={saving}
         />
       </div>
 
@@ -119,8 +111,7 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
           onChange={e => onUpdate({ positioning_statement: e.target.value })}
           placeholder="z.B. Ich helfe Tech-Startups, ihre Engineering-Teams zu skalieren."
           rows={2}
-          disabled={saving}
-          className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all disabled:opacity-50"
+          className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all"
         />
       </div>
 
@@ -132,7 +123,6 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
               <button
                 key={option}
                 onClick={() => onUpdate({ preferred_emojis: option })}
-                disabled={saving}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all ${(profile?.preferred_emojis || 'minimal') === option
                   ? 'glass-button shadow-sm'
                   : 'glass-input text-muted-foreground hover:text-foreground'
@@ -151,7 +141,6 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
               <button
                 key={option}
                 onClick={() => onUpdate({ hashtag_style: option })}
-                disabled={saving}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all ${(profile?.hashtag_style || 'niche') === option
                   ? 'glass-button shadow-sm'
                   : 'glass-input text-muted-foreground hover:text-foreground'
@@ -173,8 +162,7 @@ export default function VoiceSettings({ profile, saving, onUpdate }: VoiceSettin
             value={profile?.default_cta_style || ''}
             onChange={e => onUpdate({ default_cta_style: e.target.value })}
             placeholder="z.B. Frage stellen"
-            disabled={saving}
-            className="flex w-full h-10 rounded-xl glass-input px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all disabled:opacity-50"
+            className="flex w-full h-10 rounded-xl glass-input px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
           />
         </div>
       </div>

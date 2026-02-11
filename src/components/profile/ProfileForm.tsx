@@ -3,11 +3,10 @@ import { INDUSTRY_OPTIONS } from '../../constants/job'
 
 interface ProfileFormProps {
   profile: VoiceProfile | null
-  saving: boolean
   onUpdate: (updates: Partial<VoiceProfile>) => Promise<void>
 }
 
-export default function ProfileForm({ profile, saving, onUpdate }: ProfileFormProps) {
+export default function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold">Persönliche Daten</h3>
@@ -23,8 +22,7 @@ export default function ProfileForm({ profile, saving, onUpdate }: ProfileFormPr
             value={profile?.full_name || ''}
             onChange={e => onUpdate({ full_name: e.target.value })}
             placeholder="Max Mustermann"
-            disabled={saving}
-            className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all disabled:opacity-50"
+            className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
           />
         </div>
         <div className="space-y-2">
@@ -37,8 +35,7 @@ export default function ProfileForm({ profile, saving, onUpdate }: ProfileFormPr
             value={profile?.job_title || ''}
             onChange={e => onUpdate({ job_title: e.target.value })}
             placeholder="z.B. CTO, Marketing Manager"
-            disabled={saving}
-            className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all disabled:opacity-50"
+            className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
           />
         </div>
       </div>
@@ -54,8 +51,7 @@ export default function ProfileForm({ profile, saving, onUpdate }: ProfileFormPr
             value={profile?.company || ''}
             onChange={e => onUpdate({ company: e.target.value })}
             placeholder="z.B. Acme GmbH"
-            disabled={saving}
-            className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all disabled:opacity-50"
+            className="flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
           />
         </div>
         <div className="space-y-2">
@@ -67,8 +63,7 @@ export default function ProfileForm({ profile, saving, onUpdate }: ProfileFormPr
               id="profile-industry"
               value={profile?.industry || ''}
               onChange={e => onUpdate({ industry: e.target.value })}
-              disabled={saving}
-              className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer disabled:opacity-50"
+              className="flex h-12 w-full items-center justify-between rounded-2xl glass-input px-4 py-2 text-base ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
             >
               <option value="">Branche wählen...</option>
               {INDUSTRY_OPTIONS.map(opt => (
@@ -96,8 +91,7 @@ export default function ProfileForm({ profile, saving, onUpdate }: ProfileFormPr
           onChange={e => onUpdate({ bio: e.target.value })}
           placeholder="Erzähle kurz, wer du bist und was dich antreibt..."
           rows={3}
-          disabled={saving}
-          className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all disabled:opacity-50"
+          className="flex w-full rounded-2xl glass-input px-4 py-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-none transition-all"
         />
       </div>
     </div>

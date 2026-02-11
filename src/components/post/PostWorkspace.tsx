@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { usePostGenerator } from '../../hooks/usePostGenerator'
-import type { InputMode, Tone, Style, Language, SerializedPostVersion } from '../../types/post'
+import { useProfileContext } from '../../contexts/ProfileContext'
+import { useAuth } from '../../contexts/AuthContext'
+import type { InputMode, Tone, Style, Language, RefineAction, SerializedPostVersion } from '../../types/post'
 import type { JobConfig } from '../../types/job'
 import type { SourceInfo } from '../../types/source'
 import { DEFAULT_JOB_CONFIG } from '../../constants/job'
+import { buildProfilePayload } from '../../utils/buildProfilePayload'
 import InputPanel from './input/InputPanel'
 import OutputPanel from './output/OutputPanel'
 
@@ -44,6 +47,24 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
   const [style, setStyle] = useState<Style>(initialState?.style ?? 'story')
   const [language, setLanguage] = useState<Language>(initialState?.language ?? 'de')
 
+  const { user } = useAuth()
+  const { profile: voiceProfile, examplePosts, completeness } = useProfileContext()
+
+  const [useProfile, setUseProfile] = useState(() =>
+    localStorage.getItem('use-profile-context') === 'true'
+  )
+
+  const profileAvailable = !!user && !!voiceProfile
+  const profilePayload = useMemo(() => {
+    if (!useProfile || !voiceProfile) return undefined
+    return buildProfilePayload(voiceProfile, examplePosts)
+  }, [useProfile, voiceProfile, examplePosts])
+
+  const handleUseProfileChange = useCallback((enabled: boolean) => {
+    setUseProfile(enabled)
+    localStorage.setItem('use-profile-context', String(enabled))
+  }, [])
+
   const {
     output, loading, refining, error, versions, currentIndex, source,
     generate, refine, goToVersion, reset, loadContent, loadVersions, getSerializedVersions,
@@ -74,8 +95,12 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
 
   const handleGenerate = async () => {
     isRestoringRef.current = false
-    await generate({ mode, topic, url, tone, style, language, jobConfig: mode === 'job' ? jobConfig : undefined })
+    await generate({ mode, topic, url, tone, style, language, jobConfig: mode === 'job' ? jobConfig : undefined, profile: profilePayload })
   }
+
+  const handleRefine = useCallback((action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => {
+    return refine(action, customInstruction, settings, profilePayload)
+  }, [refine, profilePayload])
 
   const updateJobConfig = useCallback((updates: Partial<JobConfig>) => {
     setJobConfig(prev => ({ ...prev, ...updates }))
@@ -148,6 +173,10 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
           onJobConfigChange={updateJobConfig}
           onToneChange={setTone} onStyleChange={setStyle} onLanguageChange={setLanguage}
           onGenerate={handleGenerate}
+          useProfile={useProfile}
+          onUseProfileChange={handleUseProfileChange}
+          profileAvailable={profileAvailable}
+          profileCompleteness={completeness}
         />
 
         {/* Error Message */}
@@ -170,7 +199,7 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
           currentIndex={currentIndex} totalVersions={versions.length}
           tone={tone} style={style} language={language}
           refining={refining} loading={loading}
-          onGoToVersion={goToVersion} onRefine={refine} onReset={handleReset}
+          onGoToVersion={goToVersion} onRefine={handleRefine} onReset={handleReset}
         />
       </div>
     </div>

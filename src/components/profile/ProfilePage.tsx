@@ -52,12 +52,12 @@ export default function ProfilePage({ onClose }: ProfilePageProps) {
 
         {/* Profile Form */}
         <div className="glass-panel p-6 md:p-8">
-          <ProfileForm profile={profile} saving={saving} onUpdate={updateProfile} />
+          <ProfileForm profile={profile} onUpdate={updateProfile} />
         </div>
 
         {/* Voice Settings */}
         <div className="glass-panel p-6 md:p-8">
-          <VoiceSettings profile={profile} saving={saving} onUpdate={updateProfile} />
+          <VoiceSettings profile={profile} onUpdate={updateProfile} />
         </div>
 
         {/* Example Posts */}

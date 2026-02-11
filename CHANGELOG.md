@@ -1,5 +1,44 @@
 # Changelog - Content Creator Pro
 
+## [3.1.0] - Profil-Integration in Post-Generierung
+
+### Profil als Kontext (NEU)
+- **Toggle in SettingsRow:** "Mein Profil als Kontext verwenden" - nur sichtbar wenn eingeloggt + Profil vorhanden
+- **Toggle persistent:** State in localStorage (`use-profile-context`), bleibt nach Reload erhalten
+- **ProfilePayload:** Neues Interface (`types/profile.ts`) - schlankes Webhook-Format ohne DB-Metadaten
+- **buildProfilePayload:** Neue Utility (`utils/buildProfilePayload.ts`) - konvertiert VoiceProfile + ExamplePost[] zu ProfilePayload
+- **Profil bei Generate + Refine:** Profil-Kontext wird bei beiden Aktionen mitgesendet, damit die Stimme beim Ueberarbeiten erhalten bleibt
+- **Completeness-Warnung:** Hinweis wenn Toggle aktiv aber Profil < 50% ausgefuellt
+
+### n8n Workflow
+- **Build Profile Context:** Neuer Code-Node zwischen Webhook und Switch Mode
+  - Prueft ob `body.profile` im Request vorhanden ist
+  - Baut `profileContext` String mit Autor-Profil, Expertise, Werten und Beispiel-Posts
+  - Gibt leeren String zurueck wenn kein Profil (keine Aenderung am bestehenden Verhalten)
+- **System-Prompt Injection:** Alle 4 Chain LLM Nodes (Topic, URL, Job URL, Job Manual) nutzen Expression `{{ $('Build Profile Context').item.json.profileContext || '' }}` als Prefix im System-Prompt
+- **Verbindungen:** Webhook → Build Profile Context → Switch Mode (statt direkt Webhook → Switch Mode)
+
+### Profil-Formular Bugfix
+- **Fokus-Verlust behoben:** Tippen im Profilformular verlor nach jedem Buchstaben den Fokus
+  - **Ursache 1:** `useEffect` Cleanup mit `[profile]` Dependency feuerte bei jedem optimistischen State-Update → sofortiger DB-Flush → `setSaving(true)` → Inputs disabled → Fokus weg
+  - **Ursache 2:** `disabled={saving}` auf allen Text-Inputs liess Browser den Fokus entfernen
+  - **Fix:** Optimistisches lokales Update + Debounced DB-Write (500ms), Cleanup nur bei Unmount (`[]`), `disabled` von allen Text-Inputs entfernt
+
+### Geaenderte Dateien
+- `src/types/profile.ts` - ProfilePayload Interface
+- `src/utils/buildProfilePayload.ts` - NEU: Payload-Builder
+- `src/hooks/usePostGenerator.ts` - profile in GenerateParams + refine()
+- `src/hooks/useProfile.ts` - Optimistisches Update + Debounce + Fokus-Fix
+- `src/components/post/PostWorkspace.tsx` - ProfileContext, Toggle, Payload-Orchestrierung
+- `src/components/post/input/InputPanel.tsx` - 4 neue Props durchgereicht
+- `src/components/post/input/SettingsRow.tsx` - Toggle-Switch UI
+- `src/components/profile/ProfileForm.tsx` - disabled entfernt
+- `src/components/profile/VoiceSettings.tsx` - disabled entfernt
+- `src/components/profile/ProfilePage.tsx` - saving-Prop entfernt
+- `n8n/linkedin_post_generator.json` - Build Profile Context Node + System-Prompt Expressions
+
+---
+
 ## [3.0.0] - Codebase Restructuring & Voice Profile System
 
 ### Architektur-Refactoring

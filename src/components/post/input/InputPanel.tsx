@@ -25,12 +25,17 @@ interface InputPanelProps {
   onStyleChange: (style: Style) => void
   onLanguageChange: (language: Language) => void
   onGenerate: () => void
+  useProfile: boolean
+  onUseProfileChange: (enabled: boolean) => void
+  profileAvailable: boolean
+  profileCompleteness: number
 }
 
 export default function InputPanel({
   mode, topic, url, jobConfig, tone, style, language, loading,
   onModeChange, onTopicChange, onUrlChange, onJobConfigChange,
   onToneChange, onStyleChange, onLanguageChange, onGenerate,
+  useProfile, onUseProfileChange, profileAvailable, profileCompleteness,
 }: InputPanelProps) {
   const canGenerate = (() => {
     if (mode === 'topic') return !!topic.trim()
@@ -63,6 +68,8 @@ export default function InputPanel({
         <SettingsRow
           tone={tone} style={style} language={language}
           onToneChange={onToneChange} onStyleChange={onStyleChange} onLanguageChange={onLanguageChange}
+          useProfile={useProfile} onUseProfileChange={onUseProfileChange}
+          profileAvailable={profileAvailable} profileCompleteness={profileCompleteness}
         />
 
         <GenerateButton

@@ -33,7 +33,7 @@ src/
   constants/                           # Konfiguration & Optionen
     tone.ts, style.ts, language.ts, job.ts, refine.ts, modes.ts, platform.ts
   utils/                               # Pure Utility Functions
-    formatText.ts, urlValidation.ts, hashContent.ts
+    formatText.ts, urlValidation.ts, hashContent.ts, buildProfilePayload.ts
   lib/
     supabase.ts                        # Supabase Client
     api.ts                             # Webhook API Calls
@@ -63,12 +63,13 @@ src/
 ### Backend (n8n Workflow)
 ```
 Webhook (POST)
+  → Build Profile Context (Code-Node: baut profileContext String aus body.profile)
   → Switch (mode)
-    → [topic] Chain LLM
-    → [url] HTTP Request → HTML Extract → Chain LLM
+    → [topic] Chain LLM (System-Prompt mit profileContext-Prefix)
+    → [url] HTTP Request → HTML Extract → Chain LLM (mit profileContext-Prefix)
     → [job] Switch (hasExistingPosting)
-        → [true] HTTP Request → HTML Extract → Chain LLM
-        → [false] Chain LLM (manuelle Daten)
+        → [true] HTTP Request → HTML Extract → Chain LLM (mit profileContext-Prefix)
+        → [false] Chain LLM (manuelle Daten, mit profileContext-Prefix)
   → Respond to Webhook
 ```
 

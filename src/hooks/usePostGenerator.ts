@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import type { InputMode, Tone, Style, Language, RefineAction, PostVersion, SerializedPostVersion } from '../types/post'
 import type { JobConfig } from '../types/job'
 import type { SourceInfo } from '../types/source'
+import type { ProfilePayload } from '../types/profile'
 import { REFINE_PROMPTS } from '../constants/refine'
 
 // Re-export types for backward compatibility during migration
@@ -16,6 +17,7 @@ interface GenerateParams {
   style: Style
   language: Language
   jobConfig?: JobConfig
+  profile?: ProfilePayload
 }
 
 interface UsePostGeneratorReturn {
@@ -27,7 +29,7 @@ interface UsePostGeneratorReturn {
   currentIndex: number
   source: SourceInfo | null
   generate: (params: GenerateParams) => Promise<void>
-  refine: (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => Promise<void>
+  refine: (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }, profile?: ProfilePayload) => Promise<void>
   goToVersion: (index: number) => void
   reset: () => void
   loadContent: (content: string, source?: SourceInfo) => void
@@ -57,7 +59,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     setCurrentIndex(prev => prev + 1)
   }, [])
 
-  const generate = useCallback(async ({ mode, topic, url, tone, style, language, jobConfig }: GenerateParams) => {
+  const generate = useCallback(async ({ mode, topic, url, tone, style, language, jobConfig, profile }: GenerateParams) => {
     if (mode === 'topic' && !topic.trim()) {
       setError('Bitte gib ein Thema ein.')
       return
@@ -94,7 +96,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode, topic, url, tone, style, language, jobConfig }),
+        body: JSON.stringify({ mode, topic, url, tone, style, language, jobConfig, profile }),
       })
 
       if (!res.ok) {
@@ -134,7 +136,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     }
   }, [])
 
-  const refine = useCallback(async (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => {
+  const refine = useCallback(async (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }, profile?: ProfilePayload) => {
     if (!output) {
       setError('Kein Post zum Bearbeiten vorhanden.')
       return
@@ -161,7 +163,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'topic', topic: prompt, url: '', tone, style, language }),
+        body: JSON.stringify({ mode: 'topic', topic: prompt, url: '', tone, style, language, profile }),
       })
 
       if (!res.ok) {
