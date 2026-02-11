@@ -1,13 +1,12 @@
 import { useState, useCallback } from 'react'
-import type { InputMode, SourceInfo, JobConfig, SerializedPostVersion } from '../types/history'
+import type { InputMode, Tone, Style, Language, RefineAction, PostVersion, SerializedPostVersion } from '../types/post'
+import type { JobConfig } from '../types/job'
+import type { SourceInfo } from '../types/source'
+import { REFINE_PROMPTS } from '../constants/refine'
 
-export type Tone = 'professional' | 'casual' | 'inspirational' | 'educational'
-export type Style = 'story' | 'listicle' | 'question-hook' | 'bold-statement'
-export type Language = 'de' | 'en' | 'fr' | 'es' | 'it'
-export type RefineAction = 'shorter' | 'longer' | 'formal' | 'casual' | 'custom'
-export type JobSubStyle = 'wir-suchen' | 'kennt-jemanden' | 'persoenlich' | 'opportunity'
-export type CandidatePersona = 'junior' | 'senior' | 'c-level' | 'freelancer'
-export type Industry = 'tech' | 'finance' | 'healthcare' | 'marketing' | 'hr' | 'legal' | 'other'
+// Re-export types for backward compatibility during migration
+export type { Tone, Style, Language, RefineAction, PostVersion }
+export type { JobSubStyle, CandidatePersona, Industry } from '../types/job'
 
 interface GenerateParams {
   mode: InputMode
@@ -17,14 +16,6 @@ interface GenerateParams {
   style: Style
   language: Language
   jobConfig?: JobConfig
-}
-
-export interface PostVersion {
-  id: string
-  content: string
-  timestamp: Date
-  action: 'generate' | RefineAction
-  source?: SourceInfo
 }
 
 interface UsePostGeneratorReturn {
@@ -42,13 +33,6 @@ interface UsePostGeneratorReturn {
   loadContent: (content: string, source?: SourceInfo) => void
   loadVersions: (serialized: SerializedPostVersion[]) => void
   getSerializedVersions: () => SerializedPostVersion[]
-}
-
-const REFINE_PROMPTS: Record<Exclude<RefineAction, 'custom'>, string> = {
-  shorter: "Kürze diesen LinkedIn-Post auf maximal 800 Zeichen. Behalte den Kern der Aussage:",
-  longer: "Erweitere diesen LinkedIn-Post mit mehr Details und Beispielen (max 1800 Zeichen):",
-  formal: "Formuliere diesen LinkedIn-Post professioneller und formeller um:",
-  casual: "Formuliere diesen LinkedIn-Post lockerer und persönlicher um:",
 }
 
 export function usePostGenerator(): UsePostGeneratorReturn {

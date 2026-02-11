@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 const PLAN_LABELS: Record<string, string> = {
   free: 'Free',
@@ -19,9 +19,10 @@ const PLAN_LIMITS: Record<string, number> = {
 
 interface UserMenuProps {
   onLoginClick: () => void
+  onProfileClick?: () => void
 }
 
-export default function UserMenu({ onLoginClick }: UserMenuProps) {
+export default function UserMenu({ onLoginClick, onProfileClick }: UserMenuProps) {
   const { user, profile, loading, signOut } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -157,6 +158,22 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
 
           {/* Actions */}
           <div className="p-2 bg-black/20">
+            {onProfileClick && (
+              <button
+                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-3 group"
+                onClick={() => {
+                  setIsOpen(false)
+                  onProfileClick()
+                }}
+              >
+                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                Mein Profil
+              </button>
+            )}
             {plan === 'free' && (
               <button
                 className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-primary/20 hover:text-primary transition-all flex items-center gap-3 group"

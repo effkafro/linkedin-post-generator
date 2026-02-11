@@ -1,3 +1,6 @@
+import type { SourceInfo } from './source'
+import type { JobConfig } from './job'
+
 export type Json =
   | string
   | number
@@ -6,31 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type JobSubStyle = 'wir-suchen' | 'kennt-jemanden' | 'persoenlich' | 'opportunity'
-export type CandidatePersona = 'junior' | 'senior' | 'c-level' | 'freelancer'
-export type Industry = 'tech' | 'finance' | 'healthcare' | 'marketing' | 'hr' | 'legal' | 'other'
 export type Plan = 'free' | 'creator' | 'pro' | 'team' | 'agency'
-
-export interface JobConfig {
-  hasExistingPosting: boolean
-  jobUrl?: string
-  jobSubStyle: JobSubStyle
-  candidatePersona: CandidatePersona
-  industry: Industry
-  location?: string
-  remoteOption: boolean
-  companyName?: string
-  jobTitle?: string
-  benefits?: string[]
-  requirements?: string[]
-}
-
-export interface SourceInfo {
-  title: string
-  excerpt: string
-  url: string
-  favicon?: string
-}
 
 export interface Database {
   public: {

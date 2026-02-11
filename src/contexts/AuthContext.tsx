@@ -34,28 +34,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchOrCreateProfile = useCallback(async (user: User) => {
     if (!supabase) return null
 
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
 
-    if (error) {
-      console.error('Error fetching profile:', error)
-      return null
+    if (data) return data as Profile
+
+    // Profile doesn't exist yet — create it
+    if (error && error.code === 'PGRST116') {
+      const { data: created, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email ?? null,
+          full_name: (user.user_metadata?.full_name as string) ?? null,
+          avatar_url: (user.user_metadata?.avatar_url as string) ?? null,
+        } as never)
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Error creating profile:', insertError)
+        return null
+      }
+      return created as unknown as Profile
     }
 
-    return data as Profile
+    console.error('Error fetching profile:', error)
+    return null
   }, [])
 
   const refreshProfile = useCallback(async () => {
     if (!user) return
-    const profileData = await fetchProfile(user.id)
+    const profileData = await fetchOrCreateProfile(user)
     setProfile(profileData)
-  }, [user, fetchProfile])
+  }, [user, fetchOrCreateProfile])
 
   useEffect(() => {
     if (!supabase) {
@@ -63,25 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).then(setProfile)
-      }
-      setLoading(false)
-    })
-
-    // Listen for auth changes
+    // onAuthStateChange fires INITIAL_SESSION on mount — single source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
 
         if (session?.user) {
-          const profileData = await fetchProfile(session.user.id)
-          setProfile(profileData)
+          // Defer profile fetch to avoid blocking auth state updates
+          // Use setTimeout to avoid Supabase deadlock on token refresh
+          setTimeout(() => {
+            fetchOrCreateProfile(session.user).then(setProfile)
+          }, 0)
         } else {
           setProfile(null)
         }
@@ -91,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
 
     return () => subscription.unsubscribe()
-  }, [fetchProfile])
+  }, [fetchOrCreateProfile])
 
   const signIn = useCallback(async (email: string, password: string): Promise<{ error: AuthError | null }> => {
     if (!supabase) {

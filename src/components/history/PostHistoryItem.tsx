@@ -1,4 +1,4 @@
-import type { HistoryItem } from '../types/history'
+import type { HistoryItem } from '../../types/history'
 
 interface PostHistoryItemProps {
   item: HistoryItem

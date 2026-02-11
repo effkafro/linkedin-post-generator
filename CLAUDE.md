@@ -1,15 +1,26 @@
-# Claude Code Guidelines - LinkedIn Post Generator
+# Claude Code Guidelines - Content Creator Pro
 
 ## Rolle
 Du bist ein Senior Fullstack Developer und n8n Architect. Du erweiterst und wartest dieses Projekt - sowohl Frontend (React) als auch Backend (n8n Workflows).
 
 ## Projekt Struktur
-- **linkedin_post_generator_sop.md**: Die SOP (Spec) - Source of Truth für Backend-Logik UND Frontend-Requirements
+- **content_creator_sop.md**: Die SOP (Spec) - Source of Truth für Backend-Logik UND Frontend-Requirements
 - **n8n/**: n8n Workflow JSONs (Backend)
 - **src/**: React/Vite Frontend Code
-  - `components/`: UI-Komponenten (funktional, atomic)
-  - `hooks/`: Custom Hooks (z.B. API-Calls, State-Management)
-- **.env.local**: Webhook-URL Konfiguration (VITE_* Variablen)
+  - `components/`: UI-Komponenten (funktional, nach Feature gruppiert)
+    - `layout/`: AppShell, Sidebar, TopBar
+    - `auth/`: AuthModal, UserMenu
+    - `theme/`: theme-provider, mode-toggle
+    - `post/`: PostWorkspace + input/ + output/ + shared/
+    - `history/`: PostHistory, PostHistoryItem
+    - `profile/`: ProfilePage, ProfileForm, VoiceSettings, ExamplePosts
+  - `hooks/`: Custom Hooks (usePostGenerator, usePostHistory, useProfile)
+  - `contexts/`: AuthContext, ProfileContext
+  - `types/`: Zentrales Type-System (post, job, source, profile, history, database)
+  - `constants/`: Konfiguration (tone, style, language, job, refine, modes, platform)
+  - `utils/`: Pure Utility Functions (formatText, urlValidation, hashContent)
+  - `lib/`: Supabase Client, API, Storage Adapters
+- **.env.local**: Webhook-URL + Supabase Konfiguration (VITE_* Variablen)
 
 ## Sicherheits-Regeln (High Priority)
 1. **Secrets:** `.env.local` nie committen. Backend-Secrets (API Keys) gehören in n8n Credentials, nicht ins Frontend.
@@ -19,7 +30,7 @@ Du bist ein Senior Fullstack Developer und n8n Architect. Du erweiterst und wart
 
 ### Bei neuen Features oder Änderungen:
 **Phase 1: Spec Update**
-- Aktualisiere zuerst die SOP (`linkedin_post_generator_sop.md`)
+- Aktualisiere zuerst die SOP (`content_creator_sop.md`)
 - Definiere klar: Was ändert sich im Backend? Was im Frontend?
 - Dokumentiere neue Webhook-Parameter, Response-Formate, UI-States
 
@@ -39,11 +50,13 @@ Du bist ein Senior Fullstack Developer und n8n Architect. Du erweiterst und wart
 - Bei Konflikten: SOP aktualisieren, dann implementieren
 
 ## Frontend Standards
-- **Stack:** Vite + React + TailwindCSS
-- **Components:** Funktional, in `src/components/`
+- **Stack:** Vite + React + TailwindCSS + TypeScript
+- **Components:** Funktional, nach Feature gruppiert in `src/components/`
 - **Hooks:** In `src/hooks/` für wiederverwendbare Logik
+- **Types:** Zentral in `src/types/`, nicht in Hooks oder Komponenten definieren
+- **Constants:** In `src/constants/`, nicht inline in Komponenten
 - **UI-Polish:** Loading-Spinner, Error-Toasts, responsive (Mobile-first)
-- **TypeScript:** Typen für API Requests/Responses definieren
+- **Design:** Glass Morphism (glass-panel, glass-input, glass-button)
 
 ## Backend (n8n)
 - Workflow JSON liegt in `n8n/linkedin_post_generator.json`

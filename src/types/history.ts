@@ -1,18 +1,8 @@
-import type { Tone, Style, Language, RefineAction } from '../hooks/usePostGenerator'
-import type { JobConfig, SourceInfo } from './database'
+import type { InputMode, Tone, Style, Language, SerializedPostVersion } from './post'
+import type { JobConfig } from './job'
+import type { SourceInfo } from './source'
 
-export type InputMode = 'topic' | 'url' | 'job'
-
-export type { SourceInfo, JobConfig }
-export type { JobSubStyle, CandidatePersona, Industry } from './database'
-
-export interface SerializedPostVersion {
-  id: string
-  content: string
-  timestamp: string // ISO string
-  action: 'generate' | RefineAction
-  source?: SourceInfo
-}
+export type { InputMode, SourceInfo, JobConfig, SerializedPostVersion }
 
 export interface HistoryItem {
   id: string

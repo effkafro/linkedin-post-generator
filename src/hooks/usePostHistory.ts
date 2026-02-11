@@ -1,71 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import type { HistoryItem, InputMode, SourceInfo, JobConfig, SerializedPostVersion } from '../types/history'
-import type { Tone, Style, Language } from './usePostGenerator'
-import type { Database } from '../types/database'
-
-type PostInsert = Database['public']['Tables']['posts']['Insert']
-
-// Simple interface for Supabase post rows (response from DB)
-interface PostRow {
-  id: string
-  user_id: string
-  mode: string
-  topic: string | null
-  url: string | null
-  source: unknown
-  job_config: unknown
-  tone: string
-  style: string
-  language: string
-  content: string
-  char_count: number | null
-  versions: unknown
-  created_at: string
-}
-
-// Helper to get supabase client
-function getClient() {
-  return supabase
-}
-
-const STORAGE_KEY = 'linkedin-post-history'
-const MAX_ENTRIES = 50
-
-function loadFromStorage(): HistoryItem[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      const items = JSON.parse(stored) as HistoryItem[]
-      // Migration: add default mode and language for old entries
-      return items.map(item => ({
-        ...item,
-        mode: item.mode || 'topic',
-        language: item.language || 'de',
-      }))
-    }
-  } catch {
-    console.error('Failed to load history from localStorage')
-  }
-  return []
-}
-
-function saveToStorage(history: HistoryItem[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history))
-  } catch {
-    console.error('Failed to save history to localStorage')
-  }
-}
-
-function clearLocalStorage(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY)
-  } catch {
-    console.error('Failed to clear localStorage')
-  }
-}
+import type { HistoryItem } from '../types/history'
+import type { SerializedPostVersion } from '../types/post'
+import type { NewHistoryItem } from '../lib/storage/types'
+import { localStorageAdapter, clearLocalStorage } from '../lib/storage/localStorageAdapter'
+import { supabaseStorageAdapter } from '../lib/storage/supabaseStorageAdapter'
+import { hashContent } from '../utils/hashContent'
 
 export function usePostHistory() {
   const { user } = useAuth()
@@ -74,83 +14,42 @@ export function usePostHistory() {
   const previousUserIdRef = useRef<string | null>(null)
   const hasMergedRef = useRef(false)
 
-  // Helper to transform PostRow to HistoryItem
-  const transformPost = useCallback((post: PostRow): HistoryItem => ({
-    id: post.id,
-    user_id: post.user_id,
-    mode: post.mode as InputMode,
-    topic: post.topic || '',
-    url: post.url || undefined,
-    source: post.source as SourceInfo | undefined,
-    jobConfig: post.job_config as JobConfig | undefined,
-    tone: post.tone as Tone,
-    style: post.style as Style,
-    language: (post.language || 'de') as Language,
-    content: post.content,
-    createdAt: post.created_at,
-    charCount: post.char_count || post.content.length,
-    versions: Array.isArray(post.versions) ? post.versions as SerializedPostVersion[] : undefined,
-  }), [])
+  const adapter = user ? supabaseStorageAdapter : localStorageAdapter
 
   // Load history based on auth state
   useEffect(() => {
     const loadHistory = async () => {
       setLoading(true)
 
-      const client = getClient()
-      if (user && client) {
-        // User is logged in - load from Supabase
-        try {
-          const { data, error } = await client
-            .from('posts')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(MAX_ENTRIES)
+      try {
+        if (user) {
+          const cloudItems = await supabaseStorageAdapter.loadHistory()
 
-          if (error) {
-            console.error('Error loading posts from Supabase:', error)
-            setHistory(loadFromStorage())
-          } else {
-            // Transform Supabase data to HistoryItem format
-            const items: HistoryItem[] = (data || []).map(transformPost)
-
-            // Check if we need to merge localStorage items (first login)
-            if (!hasMergedRef.current && previousUserIdRef.current === null) {
-              const localItems = loadFromStorage()
-              if (localItems.length > 0) {
-                // Upload local items to Supabase
-                await mergeLocalToCloud(user.id, localItems, items)
-                hasMergedRef.current = true
-                clearLocalStorage()
-                // Reload from Supabase after merge
-                const { data: refreshedData } = await client
-                  .from('posts')
-                  .select('*')
-                  .eq('user_id', user.id)
-                  .order('created_at', { ascending: false })
-                  .limit(MAX_ENTRIES)
-
-                if (refreshedData) {
-                  setHistory(refreshedData.map(transformPost))
-                } else {
-                  setHistory(items)
-                }
-              } else {
-                setHistory(items)
-              }
+          // Check if we need to merge localStorage items (first login)
+          if (!hasMergedRef.current && previousUserIdRef.current === null) {
+            const localItems = await localStorageAdapter.loadHistory()
+            if (localItems.length > 0) {
+              await mergeLocalToCloud(user.id, localItems, cloudItems)
+              hasMergedRef.current = true
+              clearLocalStorage()
+              // Reload after merge
+              const refreshed = await supabaseStorageAdapter.loadHistory()
+              setHistory(refreshed)
             } else {
-              setHistory(items)
+              setHistory(cloudItems)
             }
+          } else {
+            setHistory(cloudItems)
           }
-        } catch (err) {
-          console.error('Error loading posts:', err)
-          setHistory(loadFromStorage())
+        } else {
+          const items = await localStorageAdapter.loadHistory()
+          setHistory(items)
+          hasMergedRef.current = false
         }
-      } else {
-        // User is not logged in - use localStorage
-        setHistory(loadFromStorage())
-        hasMergedRef.current = false
+      } catch (err) {
+        console.error('Error loading history:', err)
+        const fallback = await localStorageAdapter.loadHistory()
+        setHistory(fallback)
       }
 
       previousUserIdRef.current = user?.id || null
@@ -158,74 +57,42 @@ export function usePostHistory() {
     }
 
     loadHistory()
-  }, [user, transformPost])
+  }, [user])
 
   // Save to localStorage when history changes (only if not logged in)
   useEffect(() => {
-    if (!user && !loading) {
-      saveToStorage(history)
+    if (!user && !loading && history.length > 0) {
+      try {
+        localStorage.setItem('linkedin-post-history', JSON.stringify(history))
+      } catch {
+        // handled by adapter
+      }
     }
   }, [history, user, loading])
 
-  const mergeLocalToCloud = async (
-    userId: string,
-    localItems: HistoryItem[],
-    cloudItems: HistoryItem[]
-  ) => {
-    const client = getClient()
-    if (!client) return
+  const mergeLocalToCloud = async (userId: string, localItems: HistoryItem[], cloudItems: HistoryItem[]) => {
+    const existingHashes = new Set(cloudItems.map(item => hashContent(item.content)))
+    const itemsToUpload = localItems.filter(item => !existingHashes.has(hashContent(item.content)))
 
-    // Create a Set of existing content hashes to avoid duplicates
-    const existingHashes = new Set(
-      cloudItems.map(item => hashContent(item.content))
-    )
-
-    // Filter out duplicates
-    const itemsToUpload = localItems.filter(
-      item => !existingHashes.has(hashContent(item.content))
-    )
-
-    if (itemsToUpload.length === 0) return
-
-    // Upload new items - convert undefined to null for database compatibility
-    const postsToInsert: PostInsert[] = itemsToUpload.map(item => ({
-      user_id: userId,
-      mode: item.mode,
-      topic: item.topic || null,
-      url: item.url ?? null,
-      source: item.source ?? null,
-      job_config: item.jobConfig ?? null,
-      tone: item.tone,
-      style: item.style,
-      language: item.language,
-      content: item.content,
-      char_count: item.charCount,
-      versions: item.versions ?? null,
-      created_at: item.createdAt,
-    }))
-
-    // Type assertion needed due to Supabase client generic inference issue
-    // The postsToInsert type matches PostInsert[] which is the correct insert type
-    const { error } = await client.from('posts').insert(postsToInsert as never[])
-
-    if (error) {
-      console.error('Error merging local items to cloud:', error)
+    for (const item of itemsToUpload) {
+      await supabaseStorageAdapter.addItem(userId, {
+        mode: item.mode,
+        topic: item.topic,
+        url: item.url,
+        source: item.source,
+        jobConfig: item.jobConfig,
+        tone: item.tone,
+        style: item.style,
+        language: item.language,
+        content: item.content,
+        versions: item.versions,
+      })
     }
   }
 
-  const addToHistory = useCallback(async (item: {
-    mode: InputMode
-    topic: string
-    url?: string
-    source?: SourceInfo
-    jobConfig?: JobConfig
-    tone: Tone
-    style: Style
-    language: Language
-    content: string
-    versions?: SerializedPostVersion[]
-  }): Promise<HistoryItem | null> => {
-    let newItem: HistoryItem = {
+  const addToHistory = useCallback(async (item: NewHistoryItem): Promise<HistoryItem | null> => {
+    // Create optimistic item
+    const optimisticItem: HistoryItem = {
       id: crypto.randomUUID(),
       user_id: user?.id,
       mode: item.mode,
@@ -243,61 +110,23 @@ export function usePostHistory() {
     }
 
     // Optimistic update
-    setHistory(prev => {
-      const updated = [newItem, ...prev]
-      if (updated.length > MAX_ENTRIES) {
-        return updated.slice(0, MAX_ENTRIES)
-      }
-      return updated
-    })
+    setHistory(prev => [optimisticItem, ...prev].slice(0, 50))
 
-    // If logged in, save to Supabase
-    const client = getClient()
-    if (user && client) {
-      // Convert undefined to null for database compatibility
-      const postToInsert: PostInsert = {
-        user_id: user.id,
-        mode: item.mode,
-        topic: item.topic || null,
-        url: item.url ?? null,
-        source: item.source ?? null,
-        job_config: item.jobConfig ?? null,
-        tone: item.tone,
-        style: item.style,
-        language: item.language,
-        content: item.content,
-        char_count: item.content.length,
-        versions: item.versions ?? null,
-      }
-
-      // Type assertion needed due to Supabase client generic inference issue
-      const { data, error } = await client
-        .from('posts')
-        .insert(postToInsert as never)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error saving post to Supabase:', error)
-        // Rollback optimistic update on error
-        setHistory(prev => prev.filter(h => h.id !== newItem.id))
+    if (user) {
+      const savedItem = await adapter.addItem(user.id, item)
+      if (savedItem) {
+        // Replace optimistic with real item
+        setHistory(prev => prev.map(h => h.id === optimisticItem.id ? savedItem : h))
+        return savedItem
+      } else {
+        // Rollback
+        setHistory(prev => prev.filter(h => h.id !== optimisticItem.id))
         return null
-      } else if (data) {
-        // Update the item with the Supabase-generated ID
-        const postData = data as PostRow
-        const updatedItem = { ...newItem, id: postData.id }
-
-        // Update local state with real ID
-        setHistory(prev =>
-          prev.map(h => h.id === newItem.id ? updatedItem : h)
-        )
-
-        newItem = updatedItem
       }
     }
 
-    return newItem
-  }, [user])
+    return optimisticItem
+  }, [user, adapter])
 
   const updateHistoryItem = useCallback(async (id: string, updates: {
     content?: string
@@ -315,62 +144,18 @@ export function usePostHistory() {
       }
     }))
 
-    // If logged in, update in Supabase
-    const client = getClient()
-    if (user && client) {
-      const dbUpdates: Record<string, unknown> = {}
-      if (updates.content !== undefined) dbUpdates.content = updates.content
-      if (updates.charCount !== undefined) dbUpdates.char_count = updates.charCount
-      if (updates.versions !== undefined) dbUpdates.versions = updates.versions
-
-      const { error } = await client
-        .from('posts')
-        .update(dbUpdates as never)
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Error updating post in Supabase:', error)
-      }
-    }
-  }, [user])
+    await adapter.updateItem(user?.id, id, updates)
+  }, [user, adapter])
 
   const removeFromHistory = useCallback(async (id: string) => {
-    // Optimistic update
     setHistory(prev => prev.filter(item => item.id !== id))
-
-    // If logged in, delete from Supabase
-    const client = getClient()
-    if (user && client) {
-      const { error } = await client
-        .from('posts')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Error deleting post from Supabase:', error)
-      }
-    }
-  }, [user])
+    await adapter.removeItem(user?.id, id)
+  }, [user, adapter])
 
   const clearHistory = useCallback(async () => {
-    // Optimistic update
     setHistory([])
-
-    // If logged in, delete all from Supabase
-    const client = getClient()
-    if (user && client) {
-      const { error } = await client
-        .from('posts')
-        .delete()
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Error clearing posts from Supabase:', error)
-      }
-    }
-  }, [user])
+    await adapter.clearAll(user?.id)
+  }, [user, adapter])
 
   return {
     history,
@@ -380,15 +165,4 @@ export function usePostHistory() {
     removeFromHistory,
     clearHistory,
   }
-}
-
-// Simple hash function for content deduplication
-function hashContent(content: string): string {
-  let hash = 0
-  for (let i = 0; i < content.length; i++) {
-    const char = content.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & 0x7fffffff // Convert to positive 32bit integer
-  }
-  return hash.toString(16)
 }
