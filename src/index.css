@@ -72,6 +72,11 @@
 
   --glass-border: 1px solid rgba(255, 255, 255, 0.5);
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+
+  /* Elevated surfaces (dropdowns, modals, popovers) */
+  --card-elevated: rgba(255, 255, 255, 0.92);
+  --glass-border-elevated: 1px solid rgba(255, 255, 255, 0.6);
+  --glass-shadow-elevated: 0 12px 40px 0 rgba(31, 38, 135, 0.15), 0 4px 12px 0 rgba(0, 0, 0, 0.06);
 }
 
 [data-theme="dark"] {
@@ -116,6 +121,11 @@
 
   --glass-border: 1px solid rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+  /* Elevated surfaces (dropdowns, modals, popovers) */
+  --card-elevated: rgba(15, 23, 42, 0.92);
+  --glass-border-elevated: 1px solid rgba(255, 255, 255, 0.12);
+  --glass-shadow-elevated: 0 12px 40px 0 rgba(0, 0, 0, 0.5), 0 4px 12px 0 rgba(0, 0, 0, 0.2);
 }
 
 body {
@@ -140,6 +150,16 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: var(--glass-border);
   box-shadow: var(--glass-shadow);
+  border-radius: var(--radius);
+}
+
+/* Elevated Glass - for overlays (dropdowns, modals, popovers) */
+.glass-panel-elevated {
+  background: var(--card-elevated);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: var(--glass-border-elevated);
+  box-shadow: var(--glass-shadow-elevated);
   border-radius: var(--radius);
 }
 

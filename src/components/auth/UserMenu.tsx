@@ -99,7 +99,7 @@ export default function UserMenu({ onLoginClick, onProfileClick }: UserMenuProps
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-72 glass-panel p-0 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+        <div className="absolute right-0 mt-3 w-72 glass-panel-elevated p-0 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
           {/* User Info */}
           <div className="p-5 border-b border-white/10 bg-white/5">
             <div className="flex items-center gap-4">

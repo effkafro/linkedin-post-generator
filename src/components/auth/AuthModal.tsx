@@ -69,7 +69,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         onClick={onClose}
       >
         <div
-          className="glass-panel w-full max-w-md mx-4 p-8 shadow-2xl animate-in zoom-in-95 duration-200"
+          className="glass-panel-elevated w-full max-w-md mx-4 p-8 shadow-2xl animate-in zoom-in-95 duration-200"
           onClick={e => e.stopPropagation()}
         >
           <div className="text-center space-y-4">
@@ -100,7 +100,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClick={onClose}
     >
       <div
-        className="glass-panel w-full max-w-md mx-4 p-0 shadow-2xl animate-in zoom-in-95 duration-200"
+        className="glass-panel-elevated w-full max-w-md mx-4 p-0 shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

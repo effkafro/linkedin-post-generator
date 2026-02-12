@@ -11,7 +11,7 @@ export default function HelpModal({ title, items, onClose }: HelpModalProps) {
       onClick={onClose}
     >
       <div
-        className="glass-panel w-full max-w-lg mx-4 p-0 shadow-2xl animate-in zoom-in-95 duration-200"
+        className="glass-panel-elevated w-full max-w-lg mx-4 p-0 shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-white/10">
