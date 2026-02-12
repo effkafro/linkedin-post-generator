@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import PostWorkspace from './components/post/PostWorkspace'
 import ProfilePage from './components/profile/ProfilePage'
 import { ThemeProvider } from './components/theme/theme-provider'
@@ -30,7 +30,16 @@ function AppContent() {
   const handleVersionsChange = useCallback((data: { versions: SerializedPostVersion[], content: string } | null) => {
     currentPostDataRef.current = data
     setHasActivePost(data !== null && data.versions.length > 0)
-  }, [])
+
+    // Auto-save: persist versions to history immediately after refinement
+    if (selectedHistoryItem && data && data.versions.length > 1) {
+      updateHistoryItem(selectedHistoryItem.id, {
+        content: data.content,
+        charCount: data.content.length,
+        versions: data.versions,
+      })
+    }
+  }, [selectedHistoryItem, updateHistoryItem])
 
   const saveCurrentVersions = useCallback(async () => {
     if (selectedHistoryItem && currentPostDataRef.current) {
@@ -75,20 +84,23 @@ function AppContent() {
     }
   }, [addToHistory])
 
-  const initialState = selectedHistoryItem
-    ? {
-      mode: selectedHistoryItem.mode,
-      topic: selectedHistoryItem.topic,
-      url: selectedHistoryItem.url,
-      source: selectedHistoryItem.source,
-      jobConfig: selectedHistoryItem.jobConfig,
-      tone: selectedHistoryItem.tone,
-      style: selectedHistoryItem.style,
-      language: selectedHistoryItem.language,
-      content: selectedHistoryItem.content,
-      versions: selectedHistoryItem.versions,
-    }
-    : undefined
+  const initialState = useMemo(() =>
+    selectedHistoryItem
+      ? {
+        mode: selectedHistoryItem.mode,
+        topic: selectedHistoryItem.topic,
+        url: selectedHistoryItem.url,
+        source: selectedHistoryItem.source,
+        jobConfig: selectedHistoryItem.jobConfig,
+        tone: selectedHistoryItem.tone,
+        style: selectedHistoryItem.style,
+        language: selectedHistoryItem.language,
+        content: selectedHistoryItem.content,
+        versions: selectedHistoryItem.versions,
+      }
+      : undefined,
+    [selectedHistoryItem]
+  )
 
   return (
     <>

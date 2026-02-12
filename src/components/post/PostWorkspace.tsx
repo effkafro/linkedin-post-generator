@@ -73,23 +73,28 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
   // Track if we're restoring from history (don't save restored items)
   const isRestoringRef = useRef(false)
   const lastSavedVersionIdRef = useRef<string | null>(null)
+  const initialLoadedRef = useRef<string | null>(null)
 
   // Handle initial state restoration from history
   useEffect(() => {
-    if (initialState) {
-      isRestoringRef.current = true
-      setMode(initialState.mode)
-      setTopic(initialState.topic)
-      setUrl(initialState.url ?? '')
-      setJobConfig(initialState.jobConfig ?? DEFAULT_JOB_CONFIG)
-      setTone(initialState.tone)
-      setStyle(initialState.style)
-      setLanguage(initialState.language ?? 'de')
-      if (initialState.versions && initialState.versions.length > 0) {
-        loadVersions(initialState.versions)
-      } else {
-        loadContent(initialState.content, initialState.source)
-      }
+    if (!initialState) return
+    // Only load when the history item actually changed
+    const stateKey = initialState.versions?.[0]?.id ?? initialState.content.slice(0, 50)
+    if (initialLoadedRef.current === stateKey) return
+    initialLoadedRef.current = stateKey
+
+    isRestoringRef.current = true
+    setMode(initialState.mode)
+    setTopic(initialState.topic)
+    setUrl(initialState.url ?? '')
+    setJobConfig(initialState.jobConfig ?? DEFAULT_JOB_CONFIG)
+    setTone(initialState.tone)
+    setStyle(initialState.style)
+    setLanguage(initialState.language ?? 'de')
+    if (initialState.versions && initialState.versions.length > 0) {
+      loadVersions(initialState.versions)
+    } else {
+      loadContent(initialState.content, initialState.source)
     }
   }, [initialState, loadContent, loadVersions])
 
