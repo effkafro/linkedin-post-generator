@@ -65,7 +65,7 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
         </div>
         <button
           onClick={handleDelete}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all absolute top-3 right-3"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all absolute bottom-3 right-3"
           aria-label="Eintrag löschen"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

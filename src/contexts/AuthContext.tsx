@@ -83,7 +83,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // onAuthStateChange fires INITIAL_SESSION on mount — single source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        // Handle invalid refresh token: clean up local state silently
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          supabase.auth.signOut({ scope: 'local' })
+          setSession(null)
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+          return
+        }
+
         setSession(session)
         setUser(session?.user ?? null)
 
@@ -152,7 +162,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!supabase) return
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // If server-side sign out fails (e.g. invalid token), clean up locally
+      await supabase.auth.signOut({ scope: 'local' })
+    }
   }, [])
 
   const value: AuthContextType = {
