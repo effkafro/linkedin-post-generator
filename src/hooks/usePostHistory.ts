@@ -42,8 +42,14 @@ export function usePostHistory() {
             setHistory(cloudItems)
           }
         } else {
-          const items = await localStorageAdapter.loadHistory()
-          setHistory(items)
+          // Logout transition: clear localStorage to prevent cloud data leaking
+          if (previousUserIdRef.current !== null) {
+            clearLocalStorage()
+            setHistory([])
+          } else {
+            const items = await localStorageAdapter.loadHistory()
+            setHistory(items)
+          }
           hasMergedRef.current = false
         }
       } catch (err) {
@@ -60,8 +66,9 @@ export function usePostHistory() {
   }, [user])
 
   // Save to localStorage when history changes (only if not logged in)
+  // Skip if we just logged out to prevent cloud data leaking into localStorage
   useEffect(() => {
-    if (!user && !loading && history.length > 0) {
+    if (!user && !loading && history.length > 0 && previousUserIdRef.current === null) {
       try {
         localStorage.setItem('linkedin-post-history', JSON.stringify(history))
       } catch {

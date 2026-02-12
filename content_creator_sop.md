@@ -694,8 +694,9 @@ interface AuthContextType {
 
 ### History Sync Logic
 1. **Login:** Cloud-Posts laden → mit localStorage mergen (deduplizieren nach Content-Hash) → neue lokale Posts hochladen → localStorage leeren
-2. **Logout:** Wechsel zu localStorage-Mode, Cloud-Posts nicht mehr angezeigt
+2. **Logout:** Logout-Transition wird erkannt (`previousUserIdRef`). localStorage wird geleert, History-State auf `[]` gesetzt. Verhindert, dass Cloud-Daten in localStorage leaken (Race-Condition-Schutz zwischen Persistence-Effect und Load-Effect).
 3. **Generierung:** Eingeloggt → Supabase, nicht eingeloggt → localStorage
+4. **Persistence-Guard:** Der localStorage-Persistence-Effect schreibt nur, wenn `previousUserIdRef.current === null` (d.h. User war bereits vorher ausgeloggt). Verhindert ungewolltes Schreiben waehrend der Logout-Transition.
 
 ### Commands
 ```

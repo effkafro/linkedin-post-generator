@@ -1,5 +1,22 @@
 # Changelog - Content Creator Pro
 
+## [3.1.1] - History-Leak nach Logout behoben
+
+### Bugfix: Cloud-Posts in localStorage nach Logout
+- **Problem:** Beim Abmelden blieben Cloud-Posts im localStorage sichtbar. Nach Seiten-Refresh waren die Posts eines eingeloggten Users weiterhin fuer nicht-eingeloggte Besucher sichtbar.
+- **Ursache:** Race-Condition zwischen zwei `useEffect`-Hooks in `usePostHistory`:
+  1. Beim Logout wurde `user` auf `null` gesetzt
+  2. Der Persistence-Effect (`!user && history.length > 0`) feuerte **vor** dem Load-Effect und schrieb die Cloud-History in localStorage
+  3. Nach Refresh lud der Load-Effect die geleakten Posts aus localStorage
+- **Fix:** Logout-Transition erkennen und localStorage bereinigen
+  - **Load-Effect:** Erkennt Uebergang von eingeloggt → ausgeloggt via `previousUserIdRef`. Bei Logout: `clearLocalStorage()` + `setHistory([])` statt aus localStorage zu laden
+  - **Persistence-Effect:** Zusaetzlicher Guard `previousUserIdRef.current === null` verhindert, dass der Effect waehrend des Logouts Cloud-Daten in localStorage schreibt
+
+### Geaenderte Dateien
+- `src/hooks/usePostHistory.ts` - Logout-Transition-Erkennung + Persistence-Guard
+
+---
+
 ## [3.1.0] - Profil-Integration in Post-Generierung
 
 ### Profil als Kontext (NEU)
