@@ -654,8 +654,12 @@ interface JobConfig {
 - **Mobile (< 1024px):** Sidebar als Drawer, Hamburger-Button in TopBar
 
 ### Design System
-- **Glass Morphism:** `glass-panel`, `glass-input`, `glass-button` CSS-Klassen
-- **Dark/Light Mode:** Via ThemeProvider, `storageKey: 'vite-ui-theme'`
+- **Glass Morphism:** Zwei Ebenen nach Elevated Surface Pattern:
+  - `glass-panel`: Fuer Seiten-Elemente (Cards, Input/Output Panels, Sidebar Desktop). ~60-65% Opazitaet, `blur(20px)`.
+  - `glass-panel-elevated`: Fuer Overlays (Dropdowns, Modals, Popovers, mobile Sidebar). ~92% Opazitaet, `blur(24px)`, tieferer Schatten. Verhindert Content-Durchscheinen.
+  - `glass-input`, `glass-button`: Input- und Button-Styles mit Inner-Shadow bzw. Primary-Glow.
+- **Dark/Light Mode:** Via ThemeProvider (`.dark` Klasse + `data-theme`), `storageKey: 'vite-ui-theme'`. Tailwind v4 `dark:` Variant per `@custom-variant dark (&:where(.dark, .dark *))` aktiviert.
+- **Segmented Control (ModeTabs):** Positionsabhaengige Rundung - aeussere Kanten folgen der Container-Kurve (`rounded-[10px]`), innere Kanten sind flacher (`rounded-md`).
 - **Animations:** `animate-in`, `fade-in`, `slide-in-from-top-2`
 
 ---

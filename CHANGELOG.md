@@ -1,5 +1,37 @@
 # Changelog - Content Creator Pro
 
+## [3.2.0] - UI Polish: Elevated Surfaces, Dark Mode Fix, Segmented Control
+
+### Elevated Surface Pattern (NEU)
+- **Problem:** Overlay-Elemente (Dropdown, Modals, mobile Sidebar) nutzten `glass-panel` mit ~60% Opazitaet. Content blutete durch und wirkte diffus.
+- **Loesung:** Neue CSS-Klasse `glass-panel-elevated` mit eigenen Variablen fuer Overlays:
+  - 92% Opazitaet (statt 60-65%), staerkerer Blur (24px statt 20px), tieferer Schatten
+  - Light: `rgba(255, 255, 255, 0.92)`, Dark: `rgba(15, 23, 42, 0.92)`
+- **Angepasste Komponenten:** UserMenu-Dropdown, AuthModal, HelpModal, Sidebar
+
+### Dark Mode Fix: Tailwind v4 `dark:` Variant
+- **Problem:** `dark:` Modifier in Tailwind CSS v4 griffen nicht, da Tailwind v4 standardmaessig `prefers-color-scheme` nutzt, der ThemeProvider aber die `.dark` CSS-Klasse setzt.
+- **Fix:** `@custom-variant dark (&:where(.dark, .dark *));` in `index.css` konfiguriert Tailwind v4 fuer klassenbasiertes Dark Mode.
+- **Betroffene Stellen:** ModeTabs (`dark:bg-white/20`), AuthModal (`dark:text-green-400`), mode-toggle Icons
+
+### Segmented Control: ModeTabs
+- **Problem:** Die Mode-Tabs (Thema/URL/Job) hatten einheitliches `rounded-lg` und `gap-1`, wodurch der aktive Tab wie ein schwebender Pill aussah statt wie eingebettet in die Bar.
+- **Fix:** Positionsabhaengige Rundung (Segmented Control Pattern):
+  - Erster Tab: `rounded-l-[10px] rounded-r-md` - folgt der Container-Kurve links
+  - Mittlerer Tab: `rounded-md` - moderate Rundung beidseitig
+  - Letzter Tab: `rounded-r-[10px] rounded-l-md` - folgt der Container-Kurve rechts
+  - `gap-1` entfernt fuer nahtlosen Segmented-Control-Look
+
+### Geaenderte Dateien
+- `src/index.css` - `@custom-variant dark`, `glass-panel-elevated` + CSS-Variablen (Light + Dark)
+- `src/components/post/input/ModeTabs.tsx` - Segmented Control mit positionsabhaengiger Rundung
+- `src/components/auth/UserMenu.tsx` - `glass-panel` → `glass-panel-elevated`
+- `src/components/auth/AuthModal.tsx` - `glass-panel` → `glass-panel-elevated`
+- `src/components/post/shared/HelpModal.tsx` - `glass-panel` → `glass-panel-elevated`
+- `src/components/layout/Sidebar.tsx` - `glass-panel` → `glass-panel-elevated`
+
+---
+
 ## [3.1.1] - History-Leak nach Logout behoben
 
 ### Bugfix: Cloud-Posts in localStorage nach Logout
