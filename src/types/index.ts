@@ -4,3 +4,8 @@ export type { SourceInfo } from './source'
 export type { VoiceProfile, ExamplePost } from './profile'
 export type { HistoryItem, PostHistoryState } from './history'
 export type { Plan, Database, Json } from './database'
+export type {
+  TimeRange, MediaType, ScrapeStatus,
+  CompanyPage, ScrapedPost, ScrapeRun,
+  EngagementMetrics, PostPerformance, EngagementTrend, PostFrequency,
+} from './analytics'

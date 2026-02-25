@@ -10,11 +10,12 @@ interface AppShellProps {
   onSidebarClose: () => void
   onLoginClick: () => void
   onProfileClick: () => void
+  onDashboardClick: () => void
 }
 
 export default function AppShell({
   sidebarOpen, sidebar, children,
-  onSidebarOpen, onSidebarClose, onLoginClick, onProfileClick,
+  onSidebarOpen, onSidebarClose, onLoginClick, onProfileClick, onDashboardClick,
 }: AppShellProps) {
   return (
     <div className="relative text-foreground transition-colors duration-300">
@@ -22,6 +23,7 @@ export default function AppShell({
         onSidebarOpen={onSidebarOpen}
         onLoginClick={onLoginClick}
         onProfileClick={onProfileClick}
+        onDashboardClick={onDashboardClick}
       />
 
       <div className="flex min-h-screen p-4 lg:p-6 gap-6">

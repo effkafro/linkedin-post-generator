@@ -96,6 +96,136 @@ export interface Database {
           created_at?: string
         }
       }
+      company_pages: {
+        Row: {
+          id: string
+          user_id: string
+          platform: string
+          page_url: string
+          page_name: string | null
+          page_avatar_url: string | null
+          is_active: boolean
+          last_scraped_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          platform?: string
+          page_url: string
+          page_name?: string | null
+          page_avatar_url?: string | null
+          is_active?: boolean
+          last_scraped_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          platform?: string
+          page_url?: string
+          page_name?: string | null
+          page_avatar_url?: string | null
+          is_active?: boolean
+          last_scraped_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      scraped_posts: {
+        Row: {
+          id: string
+          company_page_id: string
+          user_id: string
+          platform: string
+          external_id: string
+          content: string | null
+          post_url: string | null
+          posted_at: string | null
+          reactions_count: number
+          comments_count: number
+          shares_count: number
+          engagement_total: number
+          media_type: string
+          raw_data: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_page_id: string
+          user_id: string
+          platform?: string
+          external_id: string
+          content?: string | null
+          post_url?: string | null
+          posted_at?: string | null
+          reactions_count?: number
+          comments_count?: number
+          shares_count?: number
+          media_type?: string
+          raw_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_page_id?: string
+          user_id?: string
+          platform?: string
+          external_id?: string
+          content?: string | null
+          post_url?: string | null
+          posted_at?: string | null
+          reactions_count?: number
+          comments_count?: number
+          shares_count?: number
+          media_type?: string
+          raw_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      scrape_runs: {
+        Row: {
+          id: string
+          company_page_id: string
+          user_id: string
+          status: string
+          posts_found: number
+          posts_new: number
+          posts_updated: number
+          error_message: string | null
+          started_at: string | null
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_page_id: string
+          user_id: string
+          status?: string
+          posts_found?: number
+          posts_new?: number
+          posts_updated?: number
+          error_message?: string | null
+          started_at?: string | null
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_page_id?: string
+          user_id?: string
+          status?: string
+          posts_found?: number
+          posts_new?: number
+          posts_updated?: number
+          error_message?: string | null
+          started_at?: string | null
+          completed_at?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never

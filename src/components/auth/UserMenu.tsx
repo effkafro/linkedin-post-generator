@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { BarChart3 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 const PLAN_LABELS: Record<string, string> = {
@@ -20,9 +21,10 @@ const PLAN_LIMITS: Record<string, number> = {
 interface UserMenuProps {
   onLoginClick: () => void
   onProfileClick?: () => void
+  onDashboardClick?: () => void
 }
 
-export default function UserMenu({ onLoginClick, onProfileClick }: UserMenuProps) {
+export default function UserMenu({ onLoginClick, onProfileClick, onDashboardClick }: UserMenuProps) {
   const { user, profile, loading, signOut } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -158,6 +160,20 @@ export default function UserMenu({ onLoginClick, onProfileClick }: UserMenuProps
 
           {/* Actions */}
           <div className="p-2 bg-black/20">
+            {onDashboardClick && (
+              <button
+                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-3 group"
+                onClick={() => {
+                  setIsOpen(false)
+                  onDashboardClick()
+                }}
+              >
+                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                  <BarChart3 className="w-4 h-4" />
+                </div>
+                Dashboard
+              </button>
+            )}
             {onProfileClick && (
               <button
                 className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-3 group"

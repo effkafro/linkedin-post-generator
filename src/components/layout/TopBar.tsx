@@ -5,9 +5,10 @@ interface TopBarProps {
   onSidebarOpen: () => void
   onLoginClick: () => void
   onProfileClick: () => void
+  onDashboardClick: () => void
 }
 
-export default function TopBar({ onSidebarOpen, onLoginClick, onProfileClick }: TopBarProps) {
+export default function TopBar({ onSidebarOpen, onLoginClick, onProfileClick, onDashboardClick }: TopBarProps) {
   return (
     <>
       {/* Mobile sidebar toggle */}
@@ -25,7 +26,7 @@ export default function TopBar({ onSidebarOpen, onLoginClick, onProfileClick }: 
 
       {/* Right side controls */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
-        <UserMenu onLoginClick={onLoginClick} onProfileClick={onProfileClick} />
+        <UserMenu onLoginClick={onLoginClick} onProfileClick={onProfileClick} onDashboardClick={onDashboardClick} />
         <ModeToggle />
       </div>
     </>

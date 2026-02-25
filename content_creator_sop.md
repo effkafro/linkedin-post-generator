@@ -29,7 +29,7 @@ Frontend (React/Vite)  →  Webhook (POST)  →  n8n Workflow  →  LLM (OpenRou
 src/
   App.tsx                              # Providers + AppShell
   types/                               # Zentrales Type-System
-    post.ts, job.ts, source.ts, profile.ts, history.ts, database.ts
+    post.ts, job.ts, source.ts, profile.ts, history.ts, database.ts, analytics.ts
   constants/                           # Konfiguration & Optionen
     tone.ts, style.ts, language.ts, job.ts, refine.ts, modes.ts, platform.ts
   utils/                               # Pure Utility Functions
@@ -46,6 +46,7 @@ src/
     usePostGenerator.ts                # Post Generation + Versioning
     usePostHistory.ts                  # History CRUD (via Storage Adapters)
     useProfile.ts                      # Profile CRUD
+    useAnalytics.ts                    # Dashboard Analytics (Scrape, Metrics, Trends)
     useCopyToClipboard.ts              # Clipboard Utility
   components/
     layout/   (AppShell, Sidebar, TopBar)
@@ -58,6 +59,8 @@ src/
       shared/ (HelpModal, GlassSelect)
     history/  (PostHistory, PostHistoryItem)
     profile/  (ProfilePage, ProfileForm, VoiceSettings, ExamplePosts, ProfileCompleteness)
+    dashboard/ (DashboardPage, DashboardSetup, TimeRangeSelector, MetricsOverview,
+                EngagementChart, PostFrequencyChart, TopPostsList, ScrapeStatus)
 ```
 
 ### Backend (n8n Workflow)
@@ -671,13 +674,17 @@ interface JobConfig {
 VITE_WEBHOOK_URL=https://[n8n-instance]/webhook/linkedin-post-generator
 VITE_SUPABASE_URL=https://[project-id].supabase.co
 VITE_SUPABASE_ANON_KEY=[anon-key]
+VITE_ANALYTICS_WEBHOOK_URL=https://[n8n-instance]/webhook/analytics/scrape
 ```
 
 ### Backend (n8n)
 - **API Key:** OpenRouter API Key (in n8n Credentials)
 - **Model:** claude-3.5-sonnet (oder vergleichbar)
 - **Temperature:** 0.7 (kreativ aber konsistent)
-- **Workflow JSON:** `n8n/linkedin_post_generator.json`
+- **Workflow JSONs:**
+  - `n8n/linkedin_post_generator.json` (Post-Generierung)
+  - `n8n/analytics_scrape_webhook.json` (On-Demand Scrape)
+  - `n8n/analytics_scrape_cron.json` (Daily Cron Scraper)
 
 ### Auth
 - **Provider:** Supabase Auth
@@ -722,6 +729,132 @@ npm run preview  # Preview Production Build lokal
 | agency | unlimited | TBD |
 
 *(Stripe-Integration geplant)*
+
+---
+
+## 11. Social Media Analytics Dashboard
+
+### Feature-Beschreibung
+Dashboard zur Analyse der eigenen Social-Media-Performance. MVP-Scope: LinkedIn Company Page Analytics mit Engagement-Metriken, Post-Performance-Ranking und Outlier-Erkennung. Datenquelle: Firecrawl (Scraping oeffentlicher Posts).
+
+### Architektur
+```
+Frontend (React)  →  Webhook (POST /analytics/scrape)  →  n8n Workflow  →  Firecrawl API
+       ↕                                                        ↕
+  Supabase (company_pages, scraped_posts, scrape_runs)    Parse & UPSERT
+```
+
+### Datenbank-Tabellen
+
+#### company_pages
+```sql
+CREATE TABLE company_pages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  platform TEXT NOT NULL DEFAULT 'linkedin',
+  page_url TEXT NOT NULL,
+  page_name TEXT,
+  page_avatar_url TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  last_scraped_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, platform, page_url)
+);
+-- RLS: Users can CRUD own pages only
+```
+
+#### scraped_posts
+```sql
+CREATE TABLE scraped_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_page_id UUID NOT NULL REFERENCES company_pages(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  platform TEXT NOT NULL DEFAULT 'linkedin',
+  external_id TEXT NOT NULL,
+  content TEXT,
+  post_url TEXT,
+  posted_at TIMESTAMPTZ,
+  reactions_count INTEGER NOT NULL DEFAULT 0,
+  comments_count INTEGER NOT NULL DEFAULT 0,
+  shares_count INTEGER NOT NULL DEFAULT 0,
+  engagement_total INTEGER GENERATED ALWAYS AS (reactions_count + comments_count + shares_count) STORED,
+  media_type TEXT NOT NULL DEFAULT 'text' CHECK (media_type IN ('text', 'image', 'video', 'carousel')),
+  raw_data JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(company_page_id, external_id)
+);
+-- RLS: Users can read/insert/update own posts only
+```
+
+#### scrape_runs
+```sql
+CREATE TABLE scrape_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_page_id UUID NOT NULL REFERENCES company_pages(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'success', 'error')),
+  posts_found INTEGER DEFAULT 0,
+  posts_new INTEGER DEFAULT 0,
+  posts_updated INTEGER DEFAULT 0,
+  error_message TEXT,
+  started_at TIMESTAMPTZ DEFAULT now(),
+  completed_at TIMESTAMPTZ
+);
+-- RLS: Users can read/insert/update own runs only
+```
+
+### n8n Workflows
+
+#### Workflow A: On-Demand Scrape (analytics_scrape_webhook.json)
+- **Trigger:** POST /analytics/scrape { user_id, company_page_id }
+- **Flow:** Validate ownership → Create scrape_run → Firecrawl scrape → Parse posts → UPSERT scraped_posts → Update scrape_run → Respond
+- **Error Handling:** scrape_run updated to status='error' with error_message
+
+#### Workflow B: Daily Cron (analytics_scrape_cron.json)
+- **Trigger:** Schedule (03:00 UTC daily)
+- **Flow:** SELECT active pages → SplitInBatches → Same scrape logic per page
+- **Error Handling:** Per-page error isolation, rate limit delays between pages
+
+### Dashboard UI States
+| State | Beschreibung |
+|-------|-------------|
+| setup | Keine Company Page hinterlegt → DashboardSetup zeigt URL-Input |
+| loading | Daten werden aus Supabase geladen → Spinner |
+| loaded | Dashboard mit Charts, KPIs, Top/Worst Posts |
+| error | Fehler beim Laden → Error-Banner |
+| scraping | Scrape laeuft → Button zeigt Spinner, "Scraping..." |
+
+### Dashboard Komponenten
+```
+src/components/dashboard/
+  DashboardPage.tsx          # Container (wie ProfilePage)
+  DashboardSetup.tsx         # Onboarding: URL eingeben + verbinden
+  TimeRangeSelector.tsx      # 7d | 30d | 90d | Alle
+  MetricsOverview.tsx        # 4 KPI-Karten (Grid)
+  EngagementChart.tsx        # recharts AreaChart (stacked)
+  PostFrequencyChart.tsx     # recharts BarChart (Posts/Woche)
+  TopPostsList.tsx           # Top 5 + Bottom 5 Posts
+  ScrapeStatus.tsx           # Letzter Scrape + Aktualisieren-Button
+```
+
+### Hook: useAnalytics
+```typescript
+// State: companyPage, posts, loading, scraping, timeRange, lastRun
+// Methods: saveCompanyPage(url), triggerScrape(), refreshData()
+// Computed (useMemo): metrics, trends, postFrequency, topPosts, worstPosts
+// Outlier-Erkennung: mean +/- 2*stddev
+```
+
+### Env-Variable
+```
+VITE_ANALYTICS_WEBHOOK_URL=https://[n8n-instance]/webhook/analytics/scrape
+```
+
+### Navigation
+- Dashboard ist erreichbar ueber UserMenu → "Dashboard" (BarChart3-Icon, vor "Mein Profil")
+- AppView erweitert: 'workspace' | 'profile' | 'dashboard'
 
 ---
 

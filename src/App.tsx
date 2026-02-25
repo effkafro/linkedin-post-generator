@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useMemo } from 'react'
 import PostWorkspace from './components/post/PostWorkspace'
 import ProfilePage from './components/profile/ProfilePage'
+import DashboardPage from './components/dashboard/DashboardPage'
 import { ThemeProvider } from './components/theme/theme-provider'
 import AppShell from './components/layout/AppShell'
 import PostHistory from './components/history/PostHistory'
@@ -13,7 +14,7 @@ import type { InputMode, Tone, Style, Language, SerializedPostVersion } from './
 import type { JobConfig } from './types/job'
 import type { SourceInfo } from './types/source'
 
-type AppView = 'workspace' | 'profile'
+type AppView = 'workspace' | 'profile' | 'dashboard'
 
 // Inner component that uses hooks requiring AuthProvider
 function AppContent() {
@@ -110,6 +111,7 @@ function AppContent() {
         onSidebarClose={() => setSidebarOpen(false)}
         onLoginClick={() => setAuthModalOpen(true)}
         onProfileClick={() => setCurrentView('profile')}
+        onDashboardClick={() => setCurrentView('dashboard')}
         sidebar={
           <PostHistory
             history={history}
@@ -121,7 +123,9 @@ function AppContent() {
           />
         }
       >
-        {currentView === 'profile' ? (
+        {currentView === 'dashboard' ? (
+          <DashboardPage onClose={() => setCurrentView('workspace')} />
+        ) : currentView === 'profile' ? (
           <ProfilePage onClose={() => setCurrentView('workspace')} />
         ) : (
           <PostWorkspace
