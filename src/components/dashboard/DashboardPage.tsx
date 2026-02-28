@@ -7,11 +7,7 @@ import PostFrequencyChart from './PostFrequencyChart'
 import TopPostsList from './TopPostsList'
 import ImportStatus from './ScrapeStatus'
 
-interface DashboardPageProps {
-  onClose: () => void
-}
-
-export default function DashboardPage({ onClose }: DashboardPageProps) {
+export default function DashboardPage() {
   const {
     companyPage, loading, importing, importError,
     lastRun,
@@ -41,16 +37,11 @@ export default function DashboardPage({ onClose }: DashboardPageProps) {
     return (
       <div className="min-h-screen py-12 px-4 transition-colors duration-300">
         <div className="max-w-3xl mx-auto space-y-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">
-                <span className="text-gradient">Dashboard</span>
-              </h1>
-              <p className="text-muted-foreground mt-1">Analysiere deine Social-Media-Performance.</p>
-            </div>
-            <button onClick={onClose} className="glass-button h-10 px-4 text-sm font-medium">
-              Zurueck
-            </button>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight">
+              <span className="text-gradient">Dashboard</span>
+            </h1>
+            <p className="text-muted-foreground mt-1">Analysiere deine Social-Media-Performance.</p>
           </div>
           <DashboardSetup onImport={handleImport} importing={importing} importError={importError} />
         </div>
@@ -63,14 +54,9 @@ export default function DashboardPage({ onClose }: DashboardPageProps) {
     <div className="min-h-screen py-12 px-4 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="text-gradient">Dashboard</span>
-          </h1>
-          <button onClick={onClose} className="glass-button h-10 px-4 text-sm font-medium">
-            Zurueck
-          </button>
-        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          <span className="text-gradient">Dashboard</span>
+        </h1>
 
         {/* Import Status */}
         <ImportStatus lastRun={lastRun} importing={importing} onImport={handleImport} />

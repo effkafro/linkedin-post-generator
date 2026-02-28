@@ -107,14 +107,13 @@ function AppContent() {
   return (
     <>
       <AppShell
+        currentView={currentView}
+        onViewChange={(view) => setCurrentView(view)}
         sidebarOpen={sidebarOpen}
         onSidebarOpen={() => setSidebarOpen(true)}
         onSidebarClose={() => setSidebarOpen(false)}
         onLoginClick={() => setAuthModalOpen(true)}
         onProfileClick={() => setCurrentView('profile')}
-        onDashboardClick={() => setCurrentView('dashboard')}
-        onHomeClick={() => setCurrentView('home')}
-        showHomeButton={currentView !== 'home'}
         showSidebar={currentView === 'workspace'}
         sidebar={
           <PostHistory
@@ -133,7 +132,7 @@ function AppContent() {
             onSelectDashboard={() => setCurrentView('dashboard')}
           />
         ) : currentView === 'dashboard' ? (
-          <DashboardPage onClose={() => setCurrentView('home')} />
+          <DashboardPage />
         ) : currentView === 'profile' ? (
           <ProfilePage onClose={() => setCurrentView('home')} />
         ) : (
