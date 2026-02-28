@@ -1,13 +1,18 @@
-import { Heart, MessageCircle, Share2, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
-import type { PostPerformance } from '../../types/analytics'
+import { Heart, MessageCircle, Share2, ExternalLink, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react'
+import type { PostPerformance, ExportType } from '../../types/analytics'
 
 interface TopPostsListProps {
   topPosts: PostPerformance[]
   worstPosts: PostPerformance[]
+  exportType: ExportType
 }
 
-function PostCard({ item }: { item: PostPerformance }) {
+function PostCard({ item, exportType }: { item: PostPerformance; exportType: ExportType }) {
   const { post, isOutlier } = item
+
+  // Personal exports have no reactions/comments/shares breakdown
+  const hasBreakdown = post.reactions_count > 0 || post.comments_count > 0 || post.shares_count > 0
+  const showEngagementTotal = exportType === 'personal' && !hasBreakdown && post.engagement_total > 0
 
   return (
     <div
@@ -32,15 +37,26 @@ function PostCard({ item }: { item: PostPerformance }) {
             })}
           </span>
         )}
-        <span className="flex items-center gap-1">
-          <Heart className="w-3 h-3" /> {post.reactions_count}
-        </span>
-        <span className="flex items-center gap-1">
-          <MessageCircle className="w-3 h-3" /> {post.comments_count}
-        </span>
-        <span className="flex items-center gap-1">
-          <Share2 className="w-3 h-3" /> {post.shares_count}
-        </span>
+        {showEngagementTotal ? (
+          <span className="flex items-center gap-1">
+            <BarChart3 className="w-3 h-3" /> {post.engagement_total.toLocaleString('de-DE')} Engagements
+          </span>
+        ) : (
+          <>
+            <span className="flex items-center gap-1">
+              <Heart className="w-3 h-3" /> {post.reactions_count}
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle className="w-3 h-3" /> {post.comments_count}
+            </span>
+            <span className="flex items-center gap-1">
+              <Share2 className="w-3 h-3" /> {post.shares_count}
+            </span>
+          </>
+        )}
+        {post.impressions > 0 && (
+          <span className="text-blue-400">{post.impressions.toLocaleString('de-DE')} Imp.</span>
+        )}
         {isOutlier === 'top' && (
           <span className="text-green-400 font-semibold ml-auto">Outlier</span>
         )}
@@ -49,7 +65,7 @@ function PostCard({ item }: { item: PostPerformance }) {
   )
 }
 
-export default function TopPostsList({ topPosts, worstPosts }: TopPostsListProps) {
+export default function TopPostsList({ topPosts, worstPosts, exportType }: TopPostsListProps) {
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* Top Performers */}
@@ -62,7 +78,7 @@ export default function TopPostsList({ topPosts, worstPosts }: TopPostsListProps
           {topPosts.length === 0 ? (
             <p className="text-sm text-muted-foreground">Noch keine Daten</p>
           ) : (
-            topPosts.map((item) => <PostCard key={item.post.id} item={item} />)
+            topPosts.map((item) => <PostCard key={item.post.id} item={item} exportType={exportType} />)
           )}
         </div>
       </div>
@@ -77,7 +93,7 @@ export default function TopPostsList({ topPosts, worstPosts }: TopPostsListProps
           {worstPosts.length === 0 ? (
             <p className="text-sm text-muted-foreground">Noch keine Daten</p>
           ) : (
-            worstPosts.map((item) => <PostCard key={item.post.id} item={item} />)
+            worstPosts.map((item) => <PostCard key={item.post.id} item={item} exportType={exportType} />)
           )}
         </div>
       </div>

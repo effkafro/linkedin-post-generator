@@ -40,29 +40,33 @@ export default function PostFrequencyChart({ data }: PostFrequencyChartProps) {
     )
   }
 
+  const style = getComputedStyle(document.documentElement)
+  const primaryColor = style.getPropertyValue('--primary').trim()
+  const mutedFg = style.getPropertyValue('--muted-foreground').trim()
+
   return (
     <div className="glass-panel p-6">
       <h3 className="text-base font-semibold text-foreground mb-4">Post-Frequenz</h3>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis
             dataKey="week"
             tickFormatter={formatWeek}
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 11, fill: mutedFg }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             allowDecimals={false}
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 11, fill: mutedFg }}
             axisLine={false}
             tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
           <Bar
             dataKey="postCount"
-            fill="hsl(var(--primary))"
+            fill={primaryColor}
             radius={[4, 4, 0, 0]}
             opacity={0.8}
           />

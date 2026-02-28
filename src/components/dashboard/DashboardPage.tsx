@@ -10,7 +10,7 @@ import ImportStatus from './ScrapeStatus'
 export default function DashboardPage() {
   const {
     companyPage, loading, importing, importError,
-    lastRun,
+    lastRun, exportType,
     importFile,
     metrics, impressionMetrics, trends, postFrequency, topPosts, worstPosts,
   } = useAnalytics()
@@ -59,19 +59,19 @@ export default function DashboardPage() {
         </h1>
 
         {/* Import Status */}
-        <ImportStatus lastRun={lastRun} importing={importing} onImport={handleImport} />
+        <ImportStatus lastRun={lastRun} importing={importing} importError={importError} onImport={handleImport} />
 
         {/* KPI Metrics */}
-        <MetricsOverview metrics={metrics} impressionMetrics={impressionMetrics} />
+        <MetricsOverview metrics={metrics} impressionMetrics={impressionMetrics} exportType={exportType} />
 
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6">
-          <EngagementChart data={trends} />
+          <EngagementChart data={trends} exportType={exportType} />
           <PostFrequencyChart data={postFrequency} />
         </div>
 
         {/* Top & Worst Posts */}
-        <TopPostsList topPosts={topPosts} worstPosts={worstPosts} />
+        <TopPostsList topPosts={topPosts} worstPosts={worstPosts} exportType={exportType} />
       </div>
     </div>
   )

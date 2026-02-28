@@ -4,6 +4,8 @@
 
 export type TimeRange = '7d' | '30d' | '90d' | 'all'
 
+export type ExportType = 'company' | 'personal'
+
 export type MediaType = 'text' | 'image' | 'video' | 'carousel'
 
 export type ScrapeStatus = 'pending' | 'running' | 'success' | 'error'
@@ -95,6 +97,36 @@ export interface EngagementTrend {
   shares: number
   total: number
   postCount: number
+  impressions?: number
+}
+
+// --- Daily Analytics (Personal Export) ---
+
+export interface DailyAnalytics {
+  id: string
+  user_id: string
+  company_page_id: string
+  date: string
+  impressions: number
+  engagements: number
+  new_followers: number
+  created_at: string
+}
+
+export interface DailyEngagement {
+  date: string
+  impressions: number
+  engagements: number
+}
+
+export interface FollowerData {
+  date: string
+  newFollowers: number
+}
+
+export interface DiscoverySummary {
+  impressions: number
+  membersReached: number
 }
 
 export interface PostFrequency {

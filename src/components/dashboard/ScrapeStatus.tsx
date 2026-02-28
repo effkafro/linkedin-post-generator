@@ -5,6 +5,7 @@ import type { ScrapeRun } from '../../types/analytics'
 interface ImportStatusProps {
   lastRun: ScrapeRun | null
   importing: boolean
+  importError: string | null
   onImport: (file: File) => void
 }
 
@@ -16,7 +17,7 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-export default function ImportStatus({ lastRun, importing, onImport }: ImportStatusProps) {
+export default function ImportStatus({ lastRun, importing, importError, onImport }: ImportStatusProps) {
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -122,6 +123,10 @@ export default function ImportStatus({ lastRun, importing, onImport }: ImportSta
           </div>
         )}
       </div>
+
+      {importError && (
+        <p className="text-sm text-destructive whitespace-pre-line">{importError}</p>
+      )}
     </div>
   )
 }

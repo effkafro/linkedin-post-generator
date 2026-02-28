@@ -5,7 +5,7 @@ import { parseLinkedInExport } from '../utils/linkedinExportParser'
 import type {
   CompanyPage, ScrapedPost, ScrapeRun,
   EngagementMetrics, ImpressionMetrics, PostPerformance, EngagementTrend, PostFrequency,
-  TimeRange,
+  TimeRange, ExportType, DailyEngagement, DiscoverySummary,
 } from '../types/analytics'
 
 function getDateThreshold(range: TimeRange): Date | null {
@@ -27,8 +27,12 @@ export function useAnalytics() {
   const [importError, setImportError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [lastRun, setLastRun] = useState<ScrapeRun | null>(null)
+  const [dailyData, setDailyData] = useState<DailyEngagement[]>([])
+  const [exportType, setExportType] = useState<ExportType>('company')
+  const [discoverySummary, setDiscoverySummary] = useState<DiscoverySummary | null>(null)
+  const [totalFollowers, setTotalFollowers] = useState<number | null>(null)
 
-  // Load company page + posts
+  // Load company page + posts + daily data
   const loadData = useCallback(async () => {
     if (!user || !supabase) {
       setLoading(false)
@@ -50,6 +54,7 @@ export function useAnalytics() {
 
       if (!page) {
         setPosts([])
+        setDailyData([])
         setLastRun(null)
         setLoading(false)
         return
@@ -69,6 +74,31 @@ export function useAnalytics() {
 
       const { data: postsData } = await postsQuery
       setPosts((postsData as ScrapedPost[] | null) ?? [])
+
+      // Load daily analytics data
+      let dailyQuery = supabase
+        .from('analytics_daily')
+        .select('*')
+        .eq('company_page_id', page.id)
+        .order('date', { ascending: true })
+
+      if (threshold) {
+        dailyQuery = dailyQuery.gte('date', threshold.toISOString().split('T')[0])
+      }
+
+      const { data: dailyRows } = await dailyQuery
+      if (dailyRows && dailyRows.length > 0) {
+        setExportType('personal')
+        setDailyData(
+          (dailyRows as Array<{ date: string; impressions: number; engagements: number }>).map(r => ({
+            date: r.date,
+            impressions: r.impressions,
+            engagements: r.engagements,
+          }))
+        )
+      } else {
+        setDailyData([])
+      }
 
       // Load last import run
       const { data: runs } = await supabase
@@ -94,7 +124,6 @@ export function useAnalytics() {
   const ensureCompanyPage = useCallback(async (): Promise<CompanyPage | null> => {
     if (!user || !supabase) return null
 
-    // If we already have a page, return it
     if (companyPage) return companyPage
 
     const insertData: Record<string, unknown> = {
@@ -156,8 +185,14 @@ export function useAnalytics() {
       let postsNew = 0
       let postsUpdated = 0
 
+      const isPersonal = result.exportType === 'personal'
+
       for (const parsed of result.posts) {
-        const engagementTotal = parsed.reactions + parsed.comments + parsed.shares
+        // For personal exports, use engagementTotal override; for company, sum the breakdown
+        const engagementTotal = isPersonal && parsed.engagementTotal !== undefined
+          ? parsed.engagementTotal
+          : parsed.reactions + parsed.comments + parsed.shares
+
         const engagementRate = parsed.impressions > 0
           ? Math.round((engagementTotal / parsed.impressions) * 10000) / 100
           : 0
@@ -173,6 +208,7 @@ export function useAnalytics() {
           reactions_count: parsed.reactions,
           comments_count: parsed.comments,
           shares_count: parsed.shares,
+          engagement_total: engagementTotal,
           media_type: parsed.mediaType,
           impressions: parsed.impressions,
           clicks: parsed.clicks,
@@ -207,7 +243,70 @@ export function useAnalytics() {
         }
       }
 
-      // 4. Log import run
+      // 4. For personal exports: upsert daily analytics data
+      if (isPersonal) {
+        setExportType('personal')
+
+        // Store discovery summary and total followers in state
+        if (result.discoverySummary) {
+          setDiscoverySummary(result.discoverySummary)
+        }
+        if (result.totalFollowers !== undefined) {
+          setTotalFollowers(result.totalFollowers)
+        }
+
+        // Merge engagement + follower data by date
+        const dailyMap = new Map<string, { impressions: number; engagements: number; newFollowers: number }>()
+
+        if (result.dailyEngagement) {
+          for (const d of result.dailyEngagement) {
+            dailyMap.set(d.date, {
+              impressions: d.impressions,
+              engagements: d.engagements,
+              newFollowers: 0,
+            })
+          }
+        }
+
+        if (result.followerData) {
+          for (const f of result.followerData) {
+            const existing = dailyMap.get(f.date)
+            if (existing) {
+              existing.newFollowers = f.newFollowers
+            } else {
+              dailyMap.set(f.date, {
+                impressions: 0,
+                engagements: 0,
+                newFollowers: f.newFollowers,
+              })
+            }
+          }
+        }
+
+        // Upsert into analytics_daily
+        if (dailyMap.size > 0) {
+          const dailyRows = Array.from(dailyMap.entries()).map(([date, data]) => ({
+            user_id: user.id,
+            company_page_id: page.id,
+            date,
+            impressions: data.impressions,
+            engagements: data.engagements,
+            new_followers: data.newFollowers,
+          }))
+
+          // Batch upsert in chunks of 100
+          for (let i = 0; i < dailyRows.length; i += 100) {
+            const chunk = dailyRows.slice(i, i + 100)
+            await supabase
+              .from('analytics_daily')
+              .upsert(chunk as never[], { onConflict: 'company_page_id,date' })
+          }
+        }
+      } else {
+        setExportType('company')
+      }
+
+      // 5. Log import run
       const runData = {
         company_page_id: page.id,
         user_id: user.id,
@@ -223,7 +322,7 @@ export function useAnalytics() {
 
       await supabase.from('scrape_runs').insert(runData as never)
 
-      // 5. Reload data
+      // 6. Reload data
       await loadData()
     } catch (err) {
       console.error('Import failed:', err)
@@ -251,7 +350,12 @@ export function useAnalytics() {
     const totalReactions = posts.reduce((sum, p) => sum + p.reactions_count, 0)
     const totalComments = posts.reduce((sum, p) => sum + p.comments_count, 0)
     const totalShares = posts.reduce((sum, p) => sum + p.shares_count, 0)
-    const totalEngagement = totalReactions + totalComments + totalShares
+
+    // For personal exports, use engagement_total directly (no breakdown available)
+    const isPersonalExport = exportType === 'personal'
+    const totalEngagement = isPersonalExport
+      ? posts.reduce((sum, p) => sum + p.engagement_total, 0)
+      : totalReactions + totalComments + totalShares
     const topPostEngagement = Math.max(...posts.map(p => p.engagement_total))
 
     return {
@@ -263,7 +367,7 @@ export function useAnalytics() {
       totalPosts: posts.length,
       topPostEngagement,
     }
-  }, [posts])
+  }, [posts, exportType])
 
   // Impression metrics (only meaningful if data exists)
   const impressionMetrics: ImpressionMetrics | null = useMemo(() => {
@@ -287,6 +391,20 @@ export function useAnalytics() {
 
   // Engagement trends grouped by day
   const trends: EngagementTrend[] = useMemo(() => {
+    // If we have daily analytics data (personal export), use it directly
+    if (dailyData.length > 0) {
+      return dailyData.map(d => ({
+        date: d.date,
+        reactions: 0,
+        comments: 0,
+        shares: 0,
+        total: d.engagements,
+        postCount: 0,
+        impressions: d.impressions,
+      }))
+    }
+
+    // Fallback: aggregate from posts (company export)
     if (posts.length === 0) return []
 
     const byDay = new Map<string, EngagementTrend>()
@@ -315,7 +433,7 @@ export function useAnalytics() {
     }
 
     return Array.from(byDay.values()).sort((a, b) => a.date.localeCompare(b.date))
-  }, [posts])
+  }, [posts, dailyData])
 
   // Post frequency grouped by week
   const postFrequency: PostFrequency[] = useMemo(() => {
@@ -326,7 +444,6 @@ export function useAnalytics() {
     for (const post of posts) {
       if (!post.posted_at) continue
       const d = new Date(post.posted_at)
-      // Get Monday of the week
       const day = d.getDay()
       const diff = d.getDate() - day + (day === 0 ? -6 : 1)
       const monday = new Date(d)
@@ -383,6 +500,9 @@ export function useAnalytics() {
     timeRange,
     setTimeRange,
     lastRun,
+    exportType,
+    discoverySummary,
+    totalFollowers,
 
     // Methods
     importFile,
