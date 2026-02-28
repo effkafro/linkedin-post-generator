@@ -1,32 +1,43 @@
-import { useState } from 'react'
-import { Link2, BarChart3 } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { Upload, BarChart3, FileSpreadsheet } from 'lucide-react'
 
 interface DashboardSetupProps {
-  onConnect: (url: string) => Promise<void>
-  loading: boolean
+  onImport: (file: File) => Promise<void>
+  importing: boolean
+  importError: string | null
 }
 
-export default function DashboardSetup({ onConnect, loading }: DashboardSetupProps) {
-  const [url, setUrl] = useState('')
-  const [error, setError] = useState('')
+const ACCEPTED_TYPES = '.xls,.xlsx,.csv'
+export default function DashboardSetup({ onImport, importing, importError }: DashboardSetupProps) {
+  const [dragOver, setDragOver] = useState(false)
+  const [fileName, setFileName] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFile = useCallback(async (file: File) => {
+    setFileName(file.name)
+    await onImport(file)
+  }, [onImport])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
-    setError('')
+    setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFile(file)
+  }, [handleFile])
 
-    const trimmed = url.trim()
-    if (!trimmed) {
-      setError('Bitte eine URL eingeben')
-      return
-    }
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(true)
+  }, [])
 
-    if (!trimmed.includes('linkedin.com')) {
-      setError('Bitte eine gueltige LinkedIn-URL eingeben')
-      return
-    }
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false)
+  }, [])
 
-    await onConnect(trimmed)
-  }
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleFile(file)
+  }, [handleFile])
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
@@ -38,50 +49,82 @@ export default function DashboardSetup({ onConnect, loading }: DashboardSetupPro
         <div className="space-y-2">
           <h2 className="text-2xl font-bold text-foreground">Analytics einrichten</h2>
           <p className="text-muted-foreground text-sm">
-            Verbinde deine LinkedIn Company Page, um deine Post-Performance zu analysieren.
-            Wir crawlen deine oeffentlichen Posts und berechnen Engagement-Metriken.
+            Exportiere deine LinkedIn Analytics und lade die Datei hier hoch.
+            Wir analysieren Impressions, Engagement und Post-Performance.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.linkedin.com/company/deine-firma"
-              className="glass-input w-full pl-10 pr-4 py-3 text-sm"
-              disabled={loading}
-            />
-          </div>
+        {/* Drop Zone */}
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            backgroundImage: dragOver
+              ? 'none'
+              : 'radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)',
+            backgroundSize: '12px 12px',
+          }}
+          className={`
+            relative border-2 border-dashed rounded-xl p-8 cursor-pointer transition-all duration-200
+            ${dragOver
+              ? 'border-primary bg-primary/10 scale-[1.02]'
+              : 'border-muted-foreground/25 hover:border-primary/50 bg-muted/30 hover:bg-primary/5'
+            }
+            ${importing ? 'pointer-events-none opacity-60' : ''}
+          `}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_TYPES}
+            onChange={handleFileInput}
+            className="hidden"
+          />
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
+          {importing ? (
+            <div className="space-y-3">
+              <svg className="w-8 h-8 mx-auto animate-spin text-primary" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <p className="text-sm text-muted-foreground">
+                {fileName} wird importiert...
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Datei hierher ziehen oder klicken
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  XLS, XLSX oder CSV
+                </p>
+              </div>
+            </div>
           )}
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="glass-button w-full h-11 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Verbinden & Scrapen...
-              </>
-            ) : (
-              'Verbinden'
-            )}
-          </button>
-        </form>
+        {importError && (
+          <p className="text-sm text-destructive whitespace-pre-line">{importError}</p>
+        )}
 
-        <p className="text-xs text-muted-foreground">
-          Wir crawlen nur oeffentlich sichtbare Posts. Keine Login-Daten erforderlich.
-        </p>
+        {/* Instructions */}
+        <div className="text-left glass-panel p-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <FileSpreadsheet className="w-4 h-4 text-primary" />
+            So exportierst du deine Daten:
+          </div>
+          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+            <li>Oeffne LinkedIn und gehe zu deinem Profil</li>
+            <li>Klicke auf <span className="text-foreground font-medium">Analytics</span> &rarr; <span className="text-foreground font-medium">Inhalt</span></li>
+            <li>Waehle den gewuenschten Zeitraum</li>
+            <li>Klicke auf <span className="text-foreground font-medium">Exportieren</span> (Download-Icon)</li>
+          </ol>
+        </div>
       </div>
     </div>
   )

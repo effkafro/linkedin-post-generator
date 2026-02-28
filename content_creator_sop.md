@@ -735,13 +735,13 @@ npm run preview  # Preview Production Build lokal
 ## 11. Social Media Analytics Dashboard
 
 ### Feature-Beschreibung
-Dashboard zur Analyse der eigenen Social-Media-Performance. MVP-Scope: LinkedIn Company Page Analytics mit Engagement-Metriken, Post-Performance-Ranking und Outlier-Erkennung. Datenquelle: Firecrawl (Scraping oeffentlicher Posts).
+Dashboard zur Analyse der eigenen Social-Media-Performance. LinkedIn Analytics Import: User exportieren ihre Content Analytics als XLS/XLSX/CSV und laden die Datei im Dashboard hoch. Parsing erfolgt client-side mit SheetJS. Metriken: Impressions, Clicks, CTR, Engagement Rate, Reactions, Comments, Shares, Video Views.
 
 ### Architektur
 ```
-Frontend (React)  →  Webhook (POST /analytics/scrape)  →  n8n Workflow  →  Firecrawl API
-       ↕                                                        ↕
-  Supabase (company_pages, scraped_posts, scrape_runs)    Parse & UPSERT
+Frontend (React)  →  File Upload (Drag & Drop)  →  SheetJS Parser (client-side)
+       ↕                                                  ↕
+  Supabase (company_pages, scraped_posts, scrape_runs)    UPSERT parsed data
 ```
 
 ### Datenbank-Tabellen
@@ -771,7 +771,7 @@ CREATE TABLE scraped_posts (
   company_page_id UUID NOT NULL REFERENCES company_pages(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   platform TEXT NOT NULL DEFAULT 'linkedin',
-  external_id TEXT NOT NULL,
+  external_id TEXT,
   content TEXT,
   post_url TEXT,
   posted_at TIMESTAMPTZ,
@@ -780,11 +780,18 @@ CREATE TABLE scraped_posts (
   shares_count INTEGER NOT NULL DEFAULT 0,
   engagement_total INTEGER GENERATED ALWAYS AS (reactions_count + comments_count + shares_count) STORED,
   media_type TEXT NOT NULL DEFAULT 'text' CHECK (media_type IN ('text', 'image', 'video', 'carousel')),
+  impressions INTEGER NOT NULL DEFAULT 0,
+  clicks INTEGER NOT NULL DEFAULT 0,
+  ctr NUMERIC NOT NULL DEFAULT 0,
+  engagement_rate NUMERIC NOT NULL DEFAULT 0,
+  video_views INTEGER NOT NULL DEFAULT 0,
+  source_type TEXT NOT NULL DEFAULT 'import',
   raw_data JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(company_page_id, external_id)
 );
+-- Unique index for deduplication: (user_id, post_url) WHERE post_url IS NOT NULL
 -- RLS: Users can read/insert/update own posts only
 ```
 
@@ -799,57 +806,49 @@ CREATE TABLE scrape_runs (
   posts_new INTEGER DEFAULT 0,
   posts_updated INTEGER DEFAULT 0,
   error_message TEXT,
+  run_type TEXT NOT NULL DEFAULT 'import',
+  file_name TEXT,
   started_at TIMESTAMPTZ DEFAULT now(),
   completed_at TIMESTAMPTZ
 );
 -- RLS: Users can read/insert/update own runs only
 ```
 
-### n8n Workflows
-
-#### Workflow A: On-Demand Scrape (analytics_scrape_webhook.json)
-- **Trigger:** POST /analytics/scrape { user_id, company_page_id }
-- **Flow:** Validate ownership → Create scrape_run → Firecrawl scrape → Parse posts → UPSERT scraped_posts → Update scrape_run → Respond
-- **Error Handling:** scrape_run updated to status='error' with error_message
-
-#### Workflow B: Daily Cron (analytics_scrape_cron.json)
-- **Trigger:** Schedule (03:00 UTC daily)
-- **Flow:** SELECT active pages → SplitInBatches → Same scrape logic per page
-- **Error Handling:** Per-page error isolation, rate limit delays between pages
+### Datenquelle: LinkedIn Content Analytics Export
+- User exportiert Daten aus LinkedIn: Profil → Analytics → Inhalt → Exportieren
+- Unterstuetzte Formate: XLS, XLSX, CSV
+- Spalten-Mapping fuer EN + DE LinkedIn-UI (automatische Erkennung)
+- Parser: `src/utils/linkedinExportParser.ts` (SheetJS-basiert)
+- Deduplizierung: Bei erneutem Import werden bestehende Posts anhand der Post-URL aktualisiert
 
 ### Dashboard UI States
 | State | Beschreibung |
 |-------|-------------|
-| setup | Keine Company Page hinterlegt → DashboardSetup zeigt URL-Input |
+| setup | Keine Daten importiert → DashboardSetup zeigt File Upload (Drag & Drop) |
 | loading | Daten werden aus Supabase geladen → Spinner |
-| loaded | Dashboard mit Charts, KPIs, Top/Worst Posts |
-| error | Fehler beim Laden → Error-Banner |
-| scraping | Scrape laeuft → Button zeigt Spinner, "Scraping..." |
+| loaded | Dashboard mit Charts, KPIs (Engagement + Impressions), Top/Worst Posts |
+| error | Fehler beim Laden/Parsen → Error-Banner |
+| importing | Import laeuft → Upload-Zone zeigt Spinner |
 
 ### Dashboard Komponenten
 ```
 src/components/dashboard/
   DashboardPage.tsx          # Container (wie ProfilePage)
-  DashboardSetup.tsx         # Onboarding: URL eingeben + verbinden
+  DashboardSetup.tsx         # Onboarding: Drag-and-Drop File Upload
   TimeRangeSelector.tsx      # 7d | 30d | 90d | Alle
-  MetricsOverview.tsx        # 4 KPI-Karten (Grid)
+  MetricsOverview.tsx        # 4+4 KPI-Karten (Engagement + Impressions)
   EngagementChart.tsx        # recharts AreaChart (stacked)
   PostFrequencyChart.tsx     # recharts BarChart (Posts/Woche)
   TopPostsList.tsx           # Top 5 + Bottom 5 Posts
-  ScrapeStatus.tsx           # Letzter Scrape + Aktualisieren-Button
+  ScrapeStatus.tsx           # Letzter Import + "Neue Datei importieren" Button
 ```
 
 ### Hook: useAnalytics
 ```typescript
-// State: companyPage, posts, loading, scraping, timeRange, lastRun
-// Methods: saveCompanyPage(url), triggerScrape(), refreshData()
-// Computed (useMemo): metrics, trends, postFrequency, topPosts, worstPosts
+// State: companyPage, posts, loading, importing, importError, timeRange, lastRun
+// Methods: importFile(file), refreshData()
+// Computed (useMemo): metrics, impressionMetrics, trends, postFrequency, topPosts, worstPosts
 // Outlier-Erkennung: mean +/- 2*stddev
-```
-
-### Env-Variable
-```
-VITE_ANALYTICS_WEBHOOK_URL=https://[n8n-instance]/webhook/analytics/scrape
 ```
 
 ### Navigation

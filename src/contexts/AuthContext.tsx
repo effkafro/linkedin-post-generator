@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         // Handle invalid refresh token: clean up local state silently
         if (event === 'TOKEN_REFRESHED' && !session) {
-          supabase.auth.signOut({ scope: 'local' })
+          supabase!.auth.signOut({ scope: 'local' })
           setSession(null)
           setUser(null)
           setProfile(null)

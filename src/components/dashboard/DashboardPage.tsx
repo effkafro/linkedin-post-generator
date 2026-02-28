@@ -1,12 +1,11 @@
 import { useCallback } from 'react'
 import { useAnalytics } from '../../hooks/useAnalytics'
 import DashboardSetup from './DashboardSetup'
-import TimeRangeSelector from './TimeRangeSelector'
 import MetricsOverview from './MetricsOverview'
 import EngagementChart from './EngagementChart'
 import PostFrequencyChart from './PostFrequencyChart'
 import TopPostsList from './TopPostsList'
-import ScrapeStatus from './ScrapeStatus'
+import ImportStatus from './ScrapeStatus'
 
 interface DashboardPageProps {
   onClose: () => void
@@ -14,18 +13,15 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ onClose }: DashboardPageProps) {
   const {
-    companyPage, loading, scraping,
-    timeRange, setTimeRange, lastRun,
-    saveCompanyPage, triggerScrape,
-    metrics, trends, postFrequency, topPosts, worstPosts,
+    companyPage, loading, importing, importError,
+    lastRun,
+    importFile,
+    metrics, impressionMetrics, trends, postFrequency, topPosts, worstPosts,
   } = useAnalytics()
 
-  const handleConnect = useCallback(async (url: string) => {
-    const page = await saveCompanyPage(url)
-    if (page) {
-      await triggerScrape(page.id)
-    }
-  }, [saveCompanyPage, triggerScrape])
+  const handleImport = useCallback(async (file: File) => {
+    await importFile(file)
+  }, [importFile])
 
   if (loading) {
     return (
@@ -54,7 +50,7 @@ export default function DashboardPage({ onClose }: DashboardPageProps) {
               Zurueck
             </button>
           </div>
-          <DashboardSetup onConnect={handleConnect} loading={scraping} />
+          <DashboardSetup onImport={handleImport} importing={importing} importError={importError} />
         </div>
       </div>
     )
@@ -66,25 +62,17 @@ export default function DashboardPage({ onClose }: DashboardPageProps) {
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              {companyPage.page_name || companyPage.page_url}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
-            <button onClick={onClose} className="glass-button h-10 px-4 text-sm font-medium">
-              Zurueck
-            </button>
-          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
+          <button onClick={onClose} className="glass-button h-10 px-4 text-sm font-medium">
+            Zurueck
+          </button>
         </div>
 
-        {/* Scrape Status */}
-        <ScrapeStatus lastRun={lastRun} scraping={scraping} onScrape={() => triggerScrape()} />
+        {/* Import Status */}
+        <ImportStatus lastRun={lastRun} importing={importing} onImport={handleImport} />
 
         {/* KPI Metrics */}
-        <MetricsOverview metrics={metrics} />
+        <MetricsOverview metrics={metrics} impressionMetrics={impressionMetrics} />
 
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6">

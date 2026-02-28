@@ -28,7 +28,7 @@ export interface ScrapedPost {
   company_page_id: string
   user_id: string
   platform: string
-  external_id: string
+  external_id: string | null
   content: string | null
   post_url: string | null
   posted_at: string | null
@@ -37,6 +37,12 @@ export interface ScrapedPost {
   shares_count: number
   engagement_total: number
   media_type: MediaType
+  impressions: number
+  clicks: number
+  ctr: number
+  engagement_rate: number
+  video_views: number
+  source_type: string
   raw_data: Record<string, unknown> | null
   created_at: string
   updated_at: string
@@ -53,6 +59,8 @@ export interface ScrapeRun {
   error_message: string | null
   started_at: string | null
   completed_at: string | null
+  run_type: string
+  file_name: string | null
 }
 
 // --- Computed / Aggregated Types ---
@@ -65,6 +73,13 @@ export interface EngagementMetrics {
   avgPerPost: number
   totalPosts: number
   topPostEngagement: number
+}
+
+export interface ImpressionMetrics {
+  totalImpressions: number
+  totalClicks: number
+  avgCTR: number
+  avgEngagementRate: number
 }
 
 export interface PostPerformance {

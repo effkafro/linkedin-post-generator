@@ -1,24 +1,11 @@
-import { RefreshCw } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { Upload, FileSpreadsheet } from 'lucide-react'
 import type { ScrapeRun } from '../../types/analytics'
 
-interface ScrapeStatusProps {
+interface ImportStatusProps {
   lastRun: ScrapeRun | null
-  scraping: boolean
-  onScrape: () => void
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  success: 'bg-green-500/20 text-green-400 border-green-500/30',
-  error: 'bg-red-500/20 text-red-400 border-red-500/30',
-  running: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  pending: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  success: 'Erfolgreich',
-  error: 'Fehler',
-  running: 'Laeuft...',
-  pending: 'Ausstehend',
+  importing: boolean
+  onImport: (file: File) => void
 }
 
 function formatDate(dateStr: string | null): string {
@@ -29,35 +16,112 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-export default function ScrapeStatus({ lastRun, scraping, onScrape }: ScrapeStatusProps) {
+export default function ImportStatus({ lastRun, importing, onImport }: ImportStatusProps) {
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFile = useCallback((file: File) => {
+    onImport(file)
+  }, [onImport])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFile(file)
+  }, [handleFile])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false)
+  }, [])
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleFile(file)
+    e.target.value = ''
+  }
+
   return (
-    <div className="glass-panel p-5 flex items-center justify-between gap-4 flex-wrap">
-      <div className="flex items-center gap-4">
-        <div className="text-sm text-muted-foreground">
-          Letzter Scrape:{' '}
-          <span className="text-foreground font-medium">
-            {lastRun ? formatDate(lastRun.completed_at ?? lastRun.started_at) : 'Noch nie'}
+    <div className="space-y-3">
+      {/* Last import info */}
+      {lastRun && (
+        <div className="glass-panel p-4 flex items-center gap-4 flex-wrap text-sm">
+          <span className="text-muted-foreground">
+            Letzter Import:{' '}
+            <span className="text-foreground font-medium">
+              {formatDate(lastRun.completed_at ?? lastRun.started_at)}
+            </span>
           </span>
+          {lastRun.file_name && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <FileSpreadsheet className="w-3 h-3" />
+              {lastRun.file_name}
+            </span>
+          )}
+          {lastRun.status === 'success' && (
+            <span className="text-xs text-muted-foreground">
+              {lastRun.posts_found} gefunden, {lastRun.posts_new} neu, {lastRun.posts_updated} aktualisiert
+            </span>
+          )}
         </div>
-        {lastRun && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[lastRun.status] ?? ''}`}>
-            {STATUS_LABELS[lastRun.status] ?? lastRun.status}
-          </span>
-        )}
-        {lastRun?.status === 'success' && (
-          <span className="text-xs text-muted-foreground">
-            {lastRun.posts_found} gefunden, {lastRun.posts_new} neu
-          </span>
+      )}
+
+      {/* Drag & Drop Zone */}
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={() => !importing && fileInputRef.current?.click()}
+        style={{
+          backgroundImage: dragOver
+            ? 'none'
+            : 'radial-gradient(circle, hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px)',
+          backgroundSize: '12px 12px',
+        }}
+        className={`
+          border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all duration-200 text-center
+          ${dragOver
+            ? 'border-primary bg-primary/10 scale-[1.01]'
+            : 'border-muted-foreground/25 hover:border-primary/50 bg-muted/30 hover:bg-primary/5'
+          }
+          ${importing ? 'pointer-events-none opacity-60' : ''}
+        `}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xls,.xlsx,.csv"
+          onChange={handleFileInput}
+          className="hidden"
+        />
+
+        {importing ? (
+          <div className="flex items-center justify-center gap-3">
+            <svg className="w-5 h-5 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span className="text-sm text-muted-foreground">Importiert...</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-3">
+            <Upload className="w-5 h-5 text-muted-foreground" />
+            <div className="text-left">
+              <p className="text-sm font-medium text-foreground">
+                Datei hierher ziehen oder klicken
+              </p>
+              <p className="text-xs text-muted-foreground">
+                LinkedIn Analytics Export (XLS, XLSX, CSV)
+              </p>
+            </div>
+          </div>
         )}
       </div>
-      <button
-        onClick={onScrape}
-        disabled={scraping}
-        className="glass-button h-9 px-4 text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-      >
-        <RefreshCw className={`w-4 h-4 ${scraping ? 'animate-spin' : ''}`} />
-        {scraping ? 'Scraping...' : 'Daten aktualisieren'}
-      </button>
     </div>
   )
 }

@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { getSupabase } from '../lib/supabase'
+import { parseLinkedInExport } from '../utils/linkedinExportParser'
 import type {
   CompanyPage, ScrapedPost, ScrapeRun,
-  EngagementMetrics, PostPerformance, EngagementTrend, PostFrequency,
+  EngagementMetrics, ImpressionMetrics, PostPerformance, EngagementTrend, PostFrequency,
   TimeRange,
 } from '../types/analytics'
-
-const ANALYTICS_WEBHOOK_URL = import.meta.env.VITE_ANALYTICS_WEBHOOK_URL
 
 function getDateThreshold(range: TimeRange): Date | null {
   if (range === 'all') return null
@@ -24,7 +23,8 @@ export function useAnalytics() {
   const [companyPage, setCompanyPage] = useState<CompanyPage | null>(null)
   const [posts, setPosts] = useState<ScrapedPost[]>([])
   const [loading, setLoading] = useState(true)
-  const [scraping, setScraping] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [lastRun, setLastRun] = useState<ScrapeRun | null>(null)
 
@@ -70,7 +70,7 @@ export function useAnalytics() {
       const { data: postsData } = await postsQuery
       setPosts((postsData as ScrapedPost[] | null) ?? [])
 
-      // Load last scrape run
+      // Load last import run
       const { data: runs } = await supabase
         .from('scrape_runs')
         .select('*')
@@ -90,14 +90,18 @@ export function useAnalytics() {
     loadData()
   }, [loadData])
 
-  // Save company page
-  const saveCompanyPage = useCallback(async (url: string): Promise<CompanyPage | null> => {
+  // Auto-create company page for imports (no URL needed)
+  const ensureCompanyPage = useCallback(async (): Promise<CompanyPage | null> => {
     if (!user || !supabase) return null
+
+    // If we already have a page, return it
+    if (companyPage) return companyPage
 
     const insertData: Record<string, unknown> = {
       user_id: user.id,
       platform: 'linkedin',
-      page_url: url.trim(),
+      page_url: 'linkedin-import',
+      page_name: 'LinkedIn Analytics Import',
     }
 
     const { data, error } = await supabase
@@ -110,45 +114,124 @@ export function useAnalytics() {
       .single()
 
     if (error) {
-      console.error('Failed to save company page:', error)
+      console.error('Failed to create company page:', error)
       return null
     }
 
     const page = data as CompanyPage
     setCompanyPage(page)
     return page
-  }, [user, supabase])
+  }, [user, supabase, companyPage])
 
-  // Trigger scrape via n8n webhook
-  const triggerScrape = useCallback(async (pageId?: string) => {
-    if (!user || !ANALYTICS_WEBHOOK_URL) return
+  // Import file
+  const importFile = useCallback(async (file: File) => {
+    if (!user || !supabase) return
 
-    const targetPageId = pageId ?? companyPage?.id
-    if (!targetPageId) return
+    setImporting(true)
+    setImportError(null)
 
-    setScraping(true)
     try {
-      const response = await fetch(ANALYTICS_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          company_page_id: targetPageId,
-        }),
-      })
+      // 1. Parse file
+      const buffer = await file.arrayBuffer()
+      const result = parseLinkedInExport(buffer)
 
-      if (!response.ok) {
-        throw new Error(`Scrape failed: ${response.statusText}`)
+      if (result.errors.length > 0) {
+        setImportError(result.errors.join('\n'))
+        return
       }
 
-      // Reload data after scrape
+      if (result.posts.length === 0) {
+        setImportError('Keine Posts in der Datei gefunden.')
+        return
+      }
+
+      // 2. Ensure company page exists
+      const page = await ensureCompanyPage()
+      if (!page) {
+        setImportError('Company Page konnte nicht erstellt werden.')
+        return
+      }
+
+      // 3. Upsert posts
+      let postsNew = 0
+      let postsUpdated = 0
+
+      for (const parsed of result.posts) {
+        const engagementTotal = parsed.reactions + parsed.comments + parsed.shares
+        const engagementRate = parsed.impressions > 0
+          ? Math.round((engagementTotal / parsed.impressions) * 10000) / 100
+          : 0
+
+        const postData = {
+          company_page_id: page.id,
+          user_id: user.id,
+          platform: 'linkedin',
+          external_id: parsed.postUrl,
+          content: parsed.content,
+          post_url: parsed.postUrl,
+          posted_at: parsed.postedAt,
+          reactions_count: parsed.reactions,
+          comments_count: parsed.comments,
+          shares_count: parsed.shares,
+          media_type: parsed.mediaType,
+          impressions: parsed.impressions,
+          clicks: parsed.clicks,
+          ctr: parsed.ctr,
+          engagement_rate: engagementRate,
+          video_views: parsed.videoViews,
+          source_type: 'import',
+          updated_at: new Date().toISOString(),
+        }
+
+        // Try insert first, if conflict update
+        const { data: existing } = await supabase
+          .from('scraped_posts')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('post_url', parsed.postUrl)
+          .limit(1)
+
+        const existingRow = (existing as { id: string }[] | null)?.[0]
+
+        if (existingRow) {
+          await supabase
+            .from('scraped_posts')
+            .update(postData as never)
+            .eq('id', existingRow.id)
+          postsUpdated++
+        } else {
+          await supabase
+            .from('scraped_posts')
+            .insert(postData as never)
+          postsNew++
+        }
+      }
+
+      // 4. Log import run
+      const runData = {
+        company_page_id: page.id,
+        user_id: user.id,
+        status: 'success',
+        posts_found: result.posts.length,
+        posts_new: postsNew,
+        posts_updated: postsUpdated,
+        run_type: 'import',
+        file_name: file.name,
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      }
+
+      await supabase.from('scrape_runs').insert(runData as never)
+
+      // 5. Reload data
       await loadData()
     } catch (err) {
-      console.error('Scrape trigger failed:', err)
+      console.error('Import failed:', err)
+      setImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen')
     } finally {
-      setScraping(false)
+      setImporting(false)
     }
-  }, [user, companyPage, loadData])
+  }, [user, supabase, ensureCompanyPage, loadData])
 
   // Refresh data from Supabase
   const refreshData = useCallback(() => {
@@ -179,6 +262,26 @@ export function useAnalytics() {
       avgPerPost: Math.round(totalEngagement / posts.length),
       totalPosts: posts.length,
       topPostEngagement,
+    }
+  }, [posts])
+
+  // Impression metrics (only meaningful if data exists)
+  const impressionMetrics: ImpressionMetrics | null = useMemo(() => {
+    const postsWithImpressions = posts.filter(p => p.impressions > 0)
+    if (postsWithImpressions.length === 0) return null
+
+    const totalImpressions = postsWithImpressions.reduce((sum, p) => sum + p.impressions, 0)
+    const totalClicks = postsWithImpressions.reduce((sum, p) => sum + p.clicks, 0)
+    const avgCTR = totalImpressions > 0
+      ? Math.round((totalClicks / totalImpressions) * 10000) / 100
+      : 0
+    const avgEngagementRate = postsWithImpressions.reduce((sum, p) => sum + p.engagement_rate, 0) / postsWithImpressions.length
+
+    return {
+      totalImpressions,
+      totalClicks,
+      avgCTR,
+      avgEngagementRate: Math.round(avgEngagementRate * 100) / 100,
     }
   }, [posts])
 
@@ -275,18 +378,19 @@ export function useAnalytics() {
     companyPage,
     posts,
     loading,
-    scraping,
+    importing,
+    importError,
     timeRange,
     setTimeRange,
     lastRun,
 
     // Methods
-    saveCompanyPage,
-    triggerScrape,
+    importFile,
     refreshData,
 
     // Computed
     metrics,
+    impressionMetrics,
     trends,
     postFrequency,
     topPosts,
