@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useMemo } from 'react'
 import PostWorkspace from './components/post/PostWorkspace'
 import ProfilePage from './components/profile/ProfilePage'
 import DashboardPage from './components/dashboard/DashboardPage'
+import HomePage from './components/home/HomePage'
 import { ThemeProvider } from './components/theme/theme-provider'
 import AppShell from './components/layout/AppShell'
 import PostHistory from './components/history/PostHistory'
@@ -14,13 +15,13 @@ import type { InputMode, Tone, Style, Language, SerializedPostVersion } from './
 import type { JobConfig } from './types/job'
 import type { SourceInfo } from './types/source'
 
-type AppView = 'workspace' | 'profile' | 'dashboard'
+type AppView = 'home' | 'workspace' | 'profile' | 'dashboard'
 
 // Inner component that uses hooks requiring AuthProvider
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [currentView, setCurrentView] = useState<AppView>('workspace')
+  const [currentView, setCurrentView] = useState<AppView>('home')
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryItem | null>(null)
   const [hasActivePost, setHasActivePost] = useState(false)
   const [resetCounter, setResetCounter] = useState(0)
@@ -112,6 +113,9 @@ function AppContent() {
         onLoginClick={() => setAuthModalOpen(true)}
         onProfileClick={() => setCurrentView('profile')}
         onDashboardClick={() => setCurrentView('dashboard')}
+        onHomeClick={() => setCurrentView('home')}
+        showHomeButton={currentView !== 'home'}
+        showSidebar={currentView === 'workspace'}
         sidebar={
           <PostHistory
             history={history}
@@ -123,10 +127,15 @@ function AppContent() {
           />
         }
       >
-        {currentView === 'dashboard' ? (
-          <DashboardPage onClose={() => setCurrentView('workspace')} />
+        {currentView === 'home' ? (
+          <HomePage
+            onSelectCreator={() => setCurrentView('workspace')}
+            onSelectDashboard={() => setCurrentView('dashboard')}
+          />
+        ) : currentView === 'dashboard' ? (
+          <DashboardPage onClose={() => setCurrentView('home')} />
         ) : currentView === 'profile' ? (
-          <ProfilePage onClose={() => setCurrentView('workspace')} />
+          <ProfilePage onClose={() => setCurrentView('home')} />
         ) : (
           <PostWorkspace
             key={selectedHistoryItem?.id ?? `fresh-${resetCounter}`}

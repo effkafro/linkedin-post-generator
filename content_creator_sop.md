@@ -852,8 +852,11 @@ src/components/dashboard/
 ```
 
 ### Navigation
-- Dashboard ist erreichbar ueber UserMenu → "Dashboard" (BarChart3-Icon, vor "Mein Profil")
-- AppView erweitert: 'workspace' | 'profile' | 'dashboard'
+- Startseite ist die HomePage mit Auswahl zwischen "Content Creator" und "Dashboard"
+- AppView: 'home' | 'workspace' | 'profile' | 'dashboard', Default: 'home'
+- Home-Button (Home-Icon) in TopBar navigiert zurueck zur Startseite
+- Dashboard/Profile "Zurueck" navigiert zurueck zur Startseite
+- Dashboard und Profil weiterhin ueber UserMenu erreichbar
 
 ---
 
