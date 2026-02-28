@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 import TopBar from './TopBar'
 import Sidebar from './Sidebar'
+import Footer from './Footer'
 
 interface AppShellProps {
   currentView?: string
   onViewChange?: (view: 'workspace' | 'dashboard') => void
+  onNavigate?: (view: 'impressum' | 'privacy' | 'terms') => void
   sidebarOpen: boolean
   sidebar: ReactNode
   children: ReactNode
@@ -16,13 +18,13 @@ interface AppShellProps {
 }
 
 export default function AppShell({
-  currentView, onViewChange,
+  currentView, onViewChange, onNavigate,
   sidebarOpen, sidebar, children,
   onSidebarOpen, onSidebarClose, onLoginClick, onProfileClick,
   showSidebar = true,
 }: AppShellProps) {
   return (
-    <div className="relative text-foreground transition-colors duration-300">
+    <div className="relative text-foreground transition-colors duration-300 flex flex-col min-h-screen">
       <TopBar
         currentView={currentView}
         onViewChange={onViewChange}
@@ -32,7 +34,7 @@ export default function AppShell({
         showSidebarToggle={showSidebar}
       />
 
-      <div className="flex min-h-screen p-4 lg:p-6 gap-6">
+      <div className="flex flex-1 p-4 lg:p-6 pb-14 gap-6">
         {showSidebar && (
           <Sidebar isOpen={sidebarOpen} onClose={onSidebarClose}>
             {sidebar}
@@ -43,6 +45,8 @@ export default function AppShell({
           {children}
         </main>
       </div>
+
+      {onNavigate && <Footer onNavigate={onNavigate} />}
     </div>
   )
 }

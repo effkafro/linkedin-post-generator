@@ -45,7 +45,7 @@ export default function Sidebar({ isOpen, onClose, children }: SidebarProps) {
         className={`
           fixed inset-y-0 left-0 z-50 w-80 glass-panel-elevated
           transition-transform duration-300 ease-in-out overflow-hidden
-          lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:translate-x-0 lg:z-0
+          lg:sticky lg:top-6 lg:h-[calc(100vh-6.5rem)] lg:translate-x-0 lg:z-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >

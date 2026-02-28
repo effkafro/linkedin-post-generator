@@ -13,9 +13,12 @@ import { usePostHistory } from './hooks/usePostHistory'
 import type { HistoryItem } from './types/history'
 import type { InputMode, Tone, Style, Language, SerializedPostVersion, StoryPoint } from './types/post'
 import type { JobConfig } from './types/job'
+import ImpressumPage from './components/legal/ImpressumPage'
+import PrivacyPage from './components/legal/PrivacyPage'
+import TermsPage from './components/legal/TermsPage'
 import type { SourceInfo } from './types/source'
 
-type AppView = 'home' | 'workspace' | 'profile' | 'dashboard'
+type AppView = 'home' | 'workspace' | 'profile' | 'dashboard' | 'impressum' | 'privacy' | 'terms'
 
 // Inner component that uses hooks requiring AuthProvider
 function AppContent() {
@@ -26,6 +29,10 @@ function AppContent() {
   const [hasActivePost, setHasActivePost] = useState(false)
   const [resetCounter, setResetCounter] = useState(0)
   const { history, addToHistory, updateHistoryItem, removeFromHistory, clearHistory } = usePostHistory()
+
+  const handleNavigate = useCallback((view: AppView) => {
+    setCurrentView(view)
+  }, [])
 
   const currentPostDataRef = useRef<{ versions: SerializedPostVersion[], content: string } | null>(null)
 
@@ -111,6 +118,7 @@ function AppContent() {
       <AppShell
         currentView={currentView}
         onViewChange={(view) => setCurrentView(view)}
+        onNavigate={handleNavigate}
         sidebarOpen={sidebarOpen}
         onSidebarOpen={() => setSidebarOpen(true)}
         onSidebarClose={() => setSidebarOpen(false)}
@@ -137,6 +145,12 @@ function AppContent() {
           <DashboardPage />
         ) : currentView === 'profile' ? (
           <ProfilePage onClose={() => setCurrentView('home')} />
+        ) : currentView === 'impressum' ? (
+          <ImpressumPage onClose={() => setCurrentView('home')} />
+        ) : currentView === 'privacy' ? (
+          <PrivacyPage onClose={() => setCurrentView('home')} />
+        ) : currentView === 'terms' ? (
+          <TermsPage onClose={() => setCurrentView('home')} />
         ) : (
           <PostWorkspace
             key={selectedHistoryItem?.id ?? `fresh-${resetCounter}`}
