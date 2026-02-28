@@ -78,7 +78,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold">Auth nicht konfiguriert</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Auth nicht konfiguriert</h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Supabase ist nicht konfiguriert. Bitte setze <code className="bg-secondary/50 px-1 py-0.5 rounded text-xs font-mono">VITE_SUPABASE_URL</code> und <code className="bg-secondary/50 px-1 py-0.5 rounded text-xs font-mono">VITE_SUPABASE_ANON_KEY</code> in deiner .env.local Datei.
             </p>
@@ -105,7 +105,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h2 className="text-xl font-semibold tracking-tight">
+          <h2 className="text-lg font-semibold tracking-tight">
             {mode === 'signin' ? 'Anmelden' : 'Registrieren'}
           </h2>
           <button

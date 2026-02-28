@@ -56,7 +56,7 @@ export default function TopPostsList({ topPosts, worstPosts }: TopPostsListProps
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-green-400" />
-          <h3 className="text-sm font-semibold text-foreground">Top Performer</h3>
+          <h3 className="text-base font-semibold text-foreground">Top Performer</h3>
         </div>
         <div className="space-y-3">
           {topPosts.length === 0 ? (
@@ -71,7 +71,7 @@ export default function TopPostsList({ topPosts, worstPosts }: TopPostsListProps
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <TrendingDown className="w-4 h-4 text-orange-400" />
-          <h3 className="text-sm font-semibold text-foreground">Verbesserungspotenzial</h3>
+          <h3 className="text-base font-semibold text-foreground">Verbesserungspotenzial</h3>
         </div>
         <div className="space-y-3">
           {worstPosts.length === 0 ? (

@@ -52,7 +52,9 @@ export default function InputPanel({
   return (
     <div className="glass-panel text-card-foreground transition-all duration-300 hover:shadow-[0_0_40px_-10px_rgba(14,165,233,0.1)]">
       <div className="p-6 md:p-8 space-y-8">
-        <ModeTabs mode={mode} onChange={onModeChange} />
+        <div className="flex justify-center w-full">
+          <ModeTabs mode={mode} onChange={onModeChange} />
+        </div>
 
         {mode === 'topic' && <TopicInput value={topic} onChange={onTopicChange} />}
         {mode === 'url' && <UrlInput value={url} onChange={onUrlChange} />}

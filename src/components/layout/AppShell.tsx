@@ -3,6 +3,8 @@ import TopBar from './TopBar'
 import Sidebar from './Sidebar'
 
 interface AppShellProps {
+  currentView?: string
+  onViewChange?: (view: 'workspace' | 'dashboard') => void
   sidebarOpen: boolean
   sidebar: ReactNode
   children: ReactNode
@@ -10,26 +12,23 @@ interface AppShellProps {
   onSidebarClose: () => void
   onLoginClick: () => void
   onProfileClick: () => void
-  onDashboardClick: () => void
-  onHomeClick: () => void
-  showHomeButton?: boolean
   showSidebar?: boolean
 }
 
 export default function AppShell({
+  currentView, onViewChange,
   sidebarOpen, sidebar, children,
-  onSidebarOpen, onSidebarClose, onLoginClick, onProfileClick, onDashboardClick, onHomeClick,
-  showHomeButton = true, showSidebar = true,
+  onSidebarOpen, onSidebarClose, onLoginClick, onProfileClick,
+  showSidebar = true,
 }: AppShellProps) {
   return (
     <div className="relative text-foreground transition-colors duration-300">
       <TopBar
+        currentView={currentView}
+        onViewChange={onViewChange}
         onSidebarOpen={onSidebarOpen}
         onLoginClick={onLoginClick}
         onProfileClick={onProfileClick}
-        onDashboardClick={onDashboardClick}
-        onHomeClick={onHomeClick}
-        showHomeButton={showHomeButton}
         showSidebarToggle={showSidebar}
       />
 

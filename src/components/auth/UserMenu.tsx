@@ -65,7 +65,7 @@ export default function UserMenu({ onLoginClick, onProfileClick, onDashboardClic
     return (
       <button
         onClick={onLoginClick}
-        className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4"
+        className="inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -162,13 +162,13 @@ export default function UserMenu({ onLoginClick, onProfileClick, onDashboardClic
           <div className="p-2 bg-black/20">
             {onDashboardClick && (
               <button
-                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-3 group"
+                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-3 group"
                 onClick={() => {
                   setIsOpen(false)
                   onDashboardClick()
                 }}
               >
-                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                   <BarChart3 className="w-4 h-4" />
                 </div>
                 Dashboard
@@ -176,13 +176,13 @@ export default function UserMenu({ onLoginClick, onProfileClick, onDashboardClic
             )}
             {onProfileClick && (
               <button
-                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-3 group"
+                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl hover:bg-white/10 hover:text-foreground transition-all flex items-center gap-3 group"
                 onClick={() => {
                   setIsOpen(false)
                   onProfileClick()
                 }}
               >
-                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -192,13 +192,13 @@ export default function UserMenu({ onLoginClick, onProfileClick, onDashboardClic
             )}
             {plan === 'free' && (
               <button
-                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-primary/20 hover:text-primary transition-all flex items-center gap-3 group"
+                className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl hover:bg-primary/20 hover:text-primary transition-all flex items-center gap-3 group"
                 onClick={() => {
                   setIsOpen(false)
                   // TODO: Open upgrade modal
                 }}
               >
-                <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                <div className="p-1.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -207,13 +207,13 @@ export default function UserMenu({ onLoginClick, onProfileClick, onDashboardClic
               </button>
             )}
             <button
-              className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all flex items-center gap-3 group"
+              className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all flex items-center gap-3 group"
               onClick={() => {
                 setIsOpen(false)
                 signOut()
               }}
             >
-              <div className="p-1.5 rounded-md bg-destructive/10 text-destructive group-hover:bg-destructive/20 transition-colors">
+              <div className="p-1.5 rounded-lg bg-destructive/10 text-destructive group-hover:bg-destructive/20 transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>

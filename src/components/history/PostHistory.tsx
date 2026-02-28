@@ -14,11 +14,11 @@ export default function PostHistory({ history, onSelect, onDelete, onClearAll, o
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-        <h2 className="font-semibold text-foreground tracking-tight">Verlauf</h2>
+        <h2 className="text-lg font-semibold text-foreground tracking-tight">Verlauf</h2>
         {history.length > 0 && (
           <button
             onClick={onClearAll}
-            className="text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 px-2 py-1 rounded-md transition-all"
+            className="text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 px-2 py-1 rounded-full transition-all"
           >
             Alle löschen
           </button>

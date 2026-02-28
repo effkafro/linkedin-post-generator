@@ -41,7 +41,7 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-extrabold tracking-tight">
               <span className="text-gradient">Dashboard</span>
             </h1>
-            <p className="text-muted-foreground mt-1">Analysiere deine Social-Media-Performance.</p>
+            <p className="text-base text-muted-foreground mt-1">Analysiere deine Social-Media-Performance.</p>
           </div>
           <DashboardSetup onImport={handleImport} importing={importing} importError={importError} />
         </div>

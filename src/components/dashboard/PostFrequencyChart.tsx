@@ -32,7 +32,7 @@ export default function PostFrequencyChart({ data }: PostFrequencyChartProps) {
   if (data.length === 0) {
     return (
       <div className="glass-panel p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Post-Frequenz</h3>
+        <h3 className="text-base font-semibold text-foreground mb-4">Post-Frequenz</h3>
         <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
           Noch keine Daten vorhanden
         </div>
@@ -42,7 +42,7 @@ export default function PostFrequencyChart({ data }: PostFrequencyChartProps) {
 
   return (
     <div className="glass-panel p-6">
-      <h3 className="text-sm font-semibold text-foreground mb-4">Post-Frequenz</h3>
+      <h3 className="text-base font-semibold text-foreground mb-4">Post-Frequenz</h3>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

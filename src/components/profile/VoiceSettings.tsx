@@ -52,7 +52,7 @@ function TagInput({ value, onChange, placeholder }: {
 export default function VoiceSettings({ profile, onUpdate }: VoiceSettingsProps) {
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Voice & Positionierung</h3>
+      <h3 className="text-base font-semibold">Voice & Positionierung</h3>
 
       <div className="space-y-2">
         <label className="text-sm font-medium pl-1 text-foreground/80">
@@ -123,7 +123,7 @@ export default function VoiceSettings({ profile, onUpdate }: VoiceSettingsProps)
               <button
                 key={option}
                 onClick={() => onUpdate({ preferred_emojis: option })}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all ${(profile?.preferred_emojis || 'minimal') === option
+                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${(profile?.preferred_emojis || 'minimal') === option
                   ? 'glass-button shadow-sm'
                   : 'glass-input text-muted-foreground hover:text-foreground'
                   }`}
@@ -141,7 +141,7 @@ export default function VoiceSettings({ profile, onUpdate }: VoiceSettingsProps)
               <button
                 key={option}
                 onClick={() => onUpdate({ hashtag_style: option })}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all ${(profile?.hashtag_style || 'niche') === option
+                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${(profile?.hashtag_style || 'niche') === option
                   ? 'glass-button shadow-sm'
                   : 'glass-input text-muted-foreground hover:text-foreground'
                   }`}

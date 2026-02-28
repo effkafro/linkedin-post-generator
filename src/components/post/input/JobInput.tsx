@@ -53,9 +53,9 @@ export default function JobInput({ jobConfig, topic, onJobConfigChange, onTopicC
               value={jobConfig.jobUrl || ''}
               onChange={e => onJobConfigChange({ jobUrl: e.target.value })}
               placeholder="https://careers.example.com/jobs/123"
-              className={`flex w-full h-10 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all ${jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl)
-                ? 'border-destructive focus-visible:ring-destructive'
-                : 'border-input'
+              className={`flex w-full h-12 rounded-2xl glass-input px-4 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all ${jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl)
+                ? 'border-destructive/50 ring-destructive/50 focus-visible:ring-destructive/50'
+                : ''
                 }`}
             />
             {jobConfig.jobUrl && !isValidUrl(jobConfig.jobUrl) && (

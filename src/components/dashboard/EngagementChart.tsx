@@ -29,7 +29,7 @@ export default function EngagementChart({ data }: EngagementChartProps) {
   if (data.length === 0) {
     return (
       <div className="glass-panel p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Engagement-Verlauf</h3>
+        <h3 className="text-base font-semibold text-foreground mb-4">Engagement-Verlauf</h3>
         <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
           Noch keine Daten vorhanden
         </div>
@@ -39,7 +39,7 @@ export default function EngagementChart({ data }: EngagementChartProps) {
 
   return (
     <div className="glass-panel p-6">
-      <h3 className="text-sm font-semibold text-foreground mb-4">Engagement-Verlauf</h3>
+      <h3 className="text-base font-semibold text-foreground mb-4">Engagement-Verlauf</h3>
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
           <defs>

@@ -51,7 +51,7 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2">
             {item.mode === 'url' && (
-              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold bg-primary/20 text-primary rounded-md backdrop-blur-md border border-primary/10">
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold bg-primary/20 text-primary rounded-lg backdrop-blur-md border border-primary/10">
                 URL
               </span>
             )}
@@ -65,7 +65,7 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
         </div>
         <button
           onClick={handleDelete}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all absolute bottom-3 right-3"
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all absolute bottom-3 right-3"
           aria-label="Eintrag löschen"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -80,7 +80,7 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
         {item.versions && item.versions.length > 1 && (
           <>
             <span className="w-1 h-1 rounded-full bg-border"></span>
-            <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold">
+            <span className="px-1.5 py-0.5 rounded-md bg-primary/15 text-primary text-[10px] font-semibold">
               {item.versions.length} Versionen
             </span>
           </>

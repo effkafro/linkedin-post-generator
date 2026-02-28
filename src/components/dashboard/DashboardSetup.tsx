@@ -47,7 +47,7 @@ export default function DashboardSetup({ onImport, importing, importError }: Das
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-foreground">Analytics einrichten</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Analytics einrichten</h2>
           <p className="text-muted-foreground text-sm">
             Exportiere deine LinkedIn Analytics und lade die Datei hier hoch.
             Wir analysieren Impressions, Engagement und Post-Performance.

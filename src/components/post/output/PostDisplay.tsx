@@ -20,7 +20,7 @@ export default function PostDisplay({ content, source }: PostDisplayProps) {
         <div className="px-6 py-3 bg-white/5 border-t border-white/5 text-xs text-muted-foreground flex items-center gap-2">
           <span className="font-semibold uppercase tracking-wider opacity-70">Quelle:</span>
           <div className="flex items-center gap-2 truncate">
-            {source.favicon && <img src={source.favicon} alt="" className="w-4 h-4 rounded-sm opacity-70" />}
+            {source.favicon && <img src={source.favicon} alt="" className="w-4 h-4 rounded-md opacity-70" />}
             <a
               href={source.url}
               target="_blank"

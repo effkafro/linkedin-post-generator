@@ -26,7 +26,7 @@ export default function RefinePanel({ tone, style, language, refining, loading, 
               key={action}
               onClick={() => onRefine(action, undefined, { tone, style, language })}
               disabled={disabled}
-              className="glass-button h-10 px-4 text-xs font-medium hover:scale-[1.02] active:scale-[0.98]"
+              className="glass-button h-10 px-4 text-sm font-medium hover:scale-[1.02] active:scale-[0.98]"
             >
               {refining === action ? (
                 <span className="animate-spin mr-2">

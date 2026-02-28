@@ -33,7 +33,7 @@ export default function HomePage({ onSelectCreator, onSelectDashboard }: HomePag
               <PenLine className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-2 relative">
-              <h2 className="text-xl font-bold">Content Creator</h2>
+              <h2 className="text-xl font-semibold">Content Creator</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 LinkedIn Posts erstellen, verfeinern und optimieren
               </p>
@@ -51,7 +51,7 @@ export default function HomePage({ onSelectCreator, onSelectDashboard }: HomePag
               <BarChart3 className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-2 relative">
-              <h2 className="text-xl font-bold">Dashboard</h2>
+              <h2 className="text-xl font-semibold">Dashboard</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Analytics und Performance deiner LinkedIn Posts
               </p>

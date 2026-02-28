@@ -15,7 +15,7 @@ export default function HelpModal({ title, items, onClose }: HelpModalProps) {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
+          <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
           <button
             onClick={onClose}
             className="rounded-full p-1 text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"

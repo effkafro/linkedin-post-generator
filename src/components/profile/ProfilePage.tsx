@@ -33,7 +33,7 @@ export default function ProfilePage({ onClose }: ProfilePageProps) {
             <h1 className="text-3xl font-extrabold tracking-tight">
               <span className="text-gradient">Mein Profil</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-base text-muted-foreground mt-1">
               Trainiere deine persönliche Voice für bessere Posts.
             </p>
           </div>
