@@ -260,6 +260,14 @@ body {
   }
 }
 
+/* All interactive elements should show pointer cursor */
+button,
+[role="button"],
+[onclick],
+summary {
+  cursor: pointer;
+}
+
 /* Smooth global transition for theme switching */
 *,
 *::before,
