@@ -41,7 +41,7 @@ export default function TopBar({
 
       {/* Right side controls */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
-        <UserMenu onLoginClick={onLoginClick} onProfileClick={onProfileClick} onDashboardClick={() => onViewChange?.('dashboard')} />
+        <UserMenu onLoginClick={onLoginClick} onProfileClick={onProfileClick} />
         <ModeToggle />
       </div>
     </>
