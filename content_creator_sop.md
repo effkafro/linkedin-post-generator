@@ -31,7 +31,7 @@ src/
   types/                               # Zentrales Type-System
     post.ts, job.ts, source.ts, profile.ts, history.ts, database.ts, analytics.ts
   constants/                           # Konfiguration & Optionen
-    tone.ts, style.ts, language.ts, job.ts, refine.ts, modes.ts, platform.ts
+    tone.ts, style.ts, language.ts, job.ts, refine.ts, modes.ts, platform.ts, storyline.ts
   utils/                               # Pure Utility Functions
     formatText.ts, urlValidation.ts, hashContent.ts, buildProfilePayload.ts
   lib/
@@ -68,7 +68,7 @@ src/
 Webhook (POST)
   → Build Profile Context (Code-Node: baut profileContext String aus body.profile)
   → Switch (mode)
-    → [topic] Chain LLM (System-Prompt mit profileContext-Prefix)
+    → [topic] Chain LLM (storyPoints → strukturierter Prompt, sonst topic. profileContext-Prefix)
     → [url] HTTP Request → HTML Extract → Chain LLM (mit profileContext-Prefix)
     → [job] Switch (hasExistingPosting)
         → [true] HTTP Request → HTML Extract → Chain LLM (mit profileContext-Prefix)
@@ -178,12 +178,27 @@ Values: {{ profile.personal_values }}
 ### Input-Modi
 
 #### Thema (mode: topic)
+
+Der Topic-Modus bietet zwei Eingabevarianten, umschaltbar über einen Toggle:
+
+##### Einfach (TopicInputMode: simple)
 - **Typ:** Textarea (mehrzeilig)
 - **Pflichtfeld:** Ja
-- **Placeholder:** "Beschreibe das Thema deines Posts..."
+- **Placeholder:** "Worüber möchtest du schreiben? (z.B. 'Die Zukunft von Remote Work')"
 - **Beispiele:**
   - "KI im HR-Bereich und wie sie Recruiting verändert"
   - "Meine Learnings nach 5 Jahren als Startup-Gründer"
+
+##### Storyline (TopicInputMode: storyline)
+- **Typ:** 3 vertikale Story-Point-Blöcke mit editierbarem Label + Textarea
+- **Pflichtfeld:** Mindestens ein Story-Punkt muss Inhalt haben
+- **Default-Labels:** "Einstieg / Hook", "Hauptteil", "Abschluss / CTA" (vom Nutzer editierbar)
+- **Zweck:** Strukturierte Eingabe für chronologische Story-Posts. Der LLM erhält die Punkte in Reihenfolge und verbindet sie zu einem fließenden Text.
+- **Beispiel:**
+  1. **Einstieg / Hook:** "Letzte Woche habe ich meinen Job gekündigt."
+  2. **Hauptteil:** "Der Grund: Ich habe 3 Jahre lang an etwas gearbeitet, das mich nicht erfüllt hat."
+  3. **Abschluss / CTA:** "Heute starte ich mein eigenes Unternehmen. Was war euer mutigster Karriere-Schritt?"
+- **UI:** Toggle-Leiste ("Thema" | "Storyline") links über den Eingabefeldern, dient gleichzeitig als Section-Label
 
 #### URL (mode: url)
 - **Typ:** Text-Input mit URL-Validierung
@@ -273,8 +288,17 @@ Values: {{ profile.personal_values }}
   "tone": "professional | casual | inspirational | educational",
   "style": "story | listicle | question-hook | bold-statement",
   "language": "de | en | fr | es | it",
-  "profile": { ... }
+  "profile": { ... },
+  "storyPoints": [
+    { "label": "Einstieg / Hook", "content": "..." },
+    { "label": "Hauptteil", "content": "..." },
+    { "label": "Abschluss / CTA", "content": "..." }
+  ]
 }
+```
+- `storyPoints` ist optional, nur vorhanden wenn `mode=topic` und Storyline-Modus aktiv
+- Leere Story-Punkte werden vom Frontend herausgefiltert (nur gefüllte werden gesendet)
+- Wenn `storyPoints` vorhanden, wird `topic` ignoriert
 ```
 
 #### Job-Mode
@@ -344,7 +368,15 @@ Values: {{ profile.personal_values }}
 Du bist ein erfahrener LinkedIn-Copywriter mit 10+ Jahren Erfahrung im Personal Branding und Content Marketing.
 
 ## DEINE AUFGABE
-Generiere einen Post basierend auf dem gegebenen Thema, Ton und Stil.
+Generiere einen Post basierend auf dem gegebenen Thema oder der Storyline, Ton und Stil.
+
+## STORYLINE-MODUS
+Wenn eine Storyline mit nummerierten Punkten gegeben ist:
+- Verwende die Punkte als inhaltliche Struktur für den Post
+- Halte die chronologische Reihenfolge der Punkte STRIKT ein
+- Die Labels (z.B. "Einstieg / Hook", "Hauptteil", "Abschluss / CTA") beschreiben die Rolle des jeweiligen Punkts
+- Verbinde die Punkte zu einem fließenden, natürlichen Text - KEINE nummerierte Liste im Output
+- Jeder Punkt soll im Post erkennbar sein, aber nahtlos übergehen
 
 ## FORMAT-REGELN
 1. **Länge:** 800-1500 Zeichen (optimal für LinkedIn-Algorithmus)
@@ -513,6 +545,7 @@ CREATE TABLE posts (
   content TEXT NOT NULL,
   char_count INTEGER,
   versions JSONB,            -- Serialisierte Version-History
+  story_points JSONB,        -- Storyline-Punkte [{label, content}] (optional)
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -579,6 +612,16 @@ CREATE POLICY "Users can manage own example posts" ON example_posts
 
 ### TypeScript Types
 
+#### Storyline Types
+```typescript
+type TopicInputMode = 'simple' | 'storyline'
+
+interface StoryPoint {
+  label: string    // z.B. "Einstieg / Hook" (editierbar)
+  content: string  // Nutzereingabe
+}
+```
+
 #### HistoryItem
 ```typescript
 interface HistoryItem {
@@ -596,6 +639,7 @@ interface HistoryItem {
   createdAt: string
   charCount: number
   versions?: SerializedPostVersion[]
+  storyPoints?: StoryPoint[]         // Nur bei Storyline-Modus
 }
 ```
 
@@ -735,13 +779,21 @@ npm run preview  # Preview Production Build lokal
 ## 11. Social Media Analytics Dashboard
 
 ### Feature-Beschreibung
-Dashboard zur Analyse der eigenen Social-Media-Performance. LinkedIn Analytics Import: User exportieren ihre Content Analytics als XLS/XLSX/CSV und laden die Datei im Dashboard hoch. Parsing erfolgt client-side mit SheetJS. Metriken: Impressions, Clicks, CTR, Engagement Rate, Reactions, Comments, Shares, Video Views.
+Dashboard zur Analyse der eigenen Social-Media-Performance. LinkedIn Analytics Import: User exportieren ihre Content Analytics als XLS/XLSX/CSV und laden die Datei im Dashboard hoch. Parsing erfolgt client-side mit SheetJS.
+
+**Unterstuetzte Export-Typen:**
+- **Company Page Export** (flache Tabelle): Ein Sheet mit einer Zeile pro Post. Volle Granularitaet: Reactions, Comments, Shares, Impressions, Clicks, CTR.
+- **Privatprofil-Export** (5 Sheets: DISCOVERY, ENGAGEMENT, TOP POSTS, FOLLOWERS, DEMOGRAPHICS): Kein Reactions/Comments/Shares-Breakdown — nur "Engagements" gesamt. Max. 50 Posts. 365 Tage Daily-Daten. Export-Typ wird automatisch anhand der Sheet-Namen erkannt (EN + DE Varianten).
+
+Metriken (Company): Impressions, Clicks, CTR, Engagement Rate, Reactions, Comments, Shares, Video Views.
+Metriken (Personal): Impressions, Engagements (gesamt), Engagement Rate. Keine Clicks/CTR.
 
 ### Architektur
 ```
 Frontend (React)  →  File Upload (Drag & Drop)  →  SheetJS Parser (client-side)
        ↕                                                  ↕
-  Supabase (company_pages, scraped_posts, scrape_runs)    UPSERT parsed data
+  Supabase (company_pages, scraped_posts,          UPSERT parsed data
+            scrape_runs, analytics_daily)          (Posts + Daily Timeseries)
 ```
 
 ### Datenbank-Tabellen
@@ -778,7 +830,7 @@ CREATE TABLE scraped_posts (
   reactions_count INTEGER NOT NULL DEFAULT 0,
   comments_count INTEGER NOT NULL DEFAULT 0,
   shares_count INTEGER NOT NULL DEFAULT 0,
-  engagement_total INTEGER GENERATED ALWAYS AS (reactions_count + comments_count + shares_count) STORED,
+  engagement_total INTEGER NOT NULL DEFAULT 0,  -- Regular column (not generated), set directly for personal exports
   media_type TEXT NOT NULL DEFAULT 'text' CHECK (media_type IN ('text', 'image', 'video', 'carousel')),
   impressions INTEGER NOT NULL DEFAULT 0,
   clicks INTEGER NOT NULL DEFAULT 0,
@@ -814,12 +866,44 @@ CREATE TABLE scrape_runs (
 -- RLS: Users can read/insert/update own runs only
 ```
 
-### Datenquelle: LinkedIn Content Analytics Export
+#### analytics_daily (Personal Export: tägliche Zeitreihen)
+```sql
+CREATE TABLE analytics_daily (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  company_page_id UUID NOT NULL REFERENCES company_pages(id),
+  date DATE NOT NULL,
+  impressions INTEGER DEFAULT 0,
+  engagements INTEGER DEFAULT 0,
+  new_followers INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(company_page_id, date)
+);
+-- RLS: auth.uid() = user_id
+-- Befuellt aus ENGAGEMENT + FOLLOWERS Sheets des Privatprofil-Exports
+```
+
+### Datenquelle: LinkedIn Analytics Export
 - User exportiert Daten aus LinkedIn: Profil → Analytics → Inhalt → Exportieren
 - Unterstuetzte Formate: XLS, XLSX, CSV
 - Spalten-Mapping fuer EN + DE LinkedIn-UI (automatische Erkennung)
 - Parser: `src/utils/linkedinExportParser.ts` (SheetJS-basiert)
 - Deduplizierung: Bei erneutem Import werden bestehende Posts anhand der Post-URL aktualisiert
+
+#### Export-Typ-Erkennung
+Parser erkennt automatisch anhand der Sheet-Namen:
+- **Company Page Export**: 1 Sheet, flache Tabelle → `parseCompanyExport()`
+- **Privatprofil-Export**: Sheets ENGAGEMENT + TOP POSTS vorhanden → `parsePersonalExport()`
+- Deutsche Varianten: TOP-BEITRÄGE, INTERAKTION, ENTDECKUNG, FOLLOWER, DEMOGRAFIEN
+
+#### Privatprofil-Export Sheets
+| Sheet | Parsing | Ziel |
+|-------|---------|------|
+| TOP POSTS | Dual-Ranking (links: by Engagements, rechts: by Impressions), per URL-Map gemerged. Header-Zeile dynamisch gesucht. | → `scraped_posts` |
+| ENGAGEMENT | Date, Impressions, Engagements pro Tag (365 Tage) | → `analytics_daily` |
+| FOLLOWERS | Date, New followers + Total aus Row 0 | → `analytics_daily` (merged by date) |
+| DISCOVERY | Impressions gesamt, Members reached | → State (discoverySummary) |
+| DEMOGRAPHICS | Job titles, Industries | → Phase 2 (nicht implementiert) |
 
 ### Dashboard UI States
 | State | Beschreibung |
@@ -833,22 +917,33 @@ CREATE TABLE scrape_runs (
 ### Dashboard Komponenten
 ```
 src/components/dashboard/
-  DashboardPage.tsx          # Container (wie ProfilePage)
+  DashboardPage.tsx          # Container, leitet exportType an Kinder weiter
   DashboardSetup.tsx         # Onboarding: Drag-and-Drop File Upload
   TimeRangeSelector.tsx      # 7d | 30d | 90d | Alle
-  MetricsOverview.tsx        # 4+4 KPI-Karten (Engagement + Impressions)
-  EngagementChart.tsx        # recharts AreaChart (stacked)
+  MetricsOverview.tsx        # KPI-Karten mit Info-Tooltips (?-Icon)
+                             #   Company: Reactions/Comments/Shares + Impressions/CTR/Clicks
+                             #   Personal: Engagements (gesamt) + Impressions/ER (kein CTR/Clicks)
+  EngagementChart.tsx        # recharts AreaChart
+                             #   Company: stacked Reactions/Comments/Shares
+                             #   Personal: Engagements + Impressions (2 separate Areas)
   PostFrequencyChart.tsx     # recharts BarChart (Posts/Woche)
   TopPostsList.tsx           # Top 5 + Bottom 5 Posts
-  ScrapeStatus.tsx           # Letzter Import + "Neue Datei importieren" Button
+                             #   Personal: "X Engagements" statt Heart/Comment/Share Icons
+  ScrapeStatus.tsx           # Letzter Import + Re-Import Drop-Zone + importError Anzeige
 ```
+
+### Recharts + Dark Mode
+Recharts SVG-Elemente unterstuetzen keine Tailwind-Klassen. CSS-Variablen (`--primary`, `--muted-foreground`) sind als Hex definiert. Charts lesen die Werte via `getComputedStyle(document.documentElement)` und uebergeben sie direkt als Props. NICHT `hsl(var(--primary))` verwenden (ungueltig bei Hex-Variablen).
 
 ### Hook: useAnalytics
 ```typescript
-// State: companyPage, posts, loading, importing, importError, timeRange, lastRun
+// State: companyPage, posts, loading, importing, importError, timeRange, lastRun,
+//        exportType ('company'|'personal'), dailyData, discoverySummary, totalFollowers
 // Methods: importFile(file), refreshData()
 // Computed (useMemo): metrics, impressionMetrics, trends, postFrequency, topPosts, worstPosts
 // Outlier-Erkennung: mean +/- 2*stddev
+// Trends: Personal → direkt aus analytics_daily (365 Tage), Company → post-basiert aggregiert
+// Metrics: Personal → engagement_total direkt, Company → reactions + comments + shares
 ```
 
 ### Navigation
