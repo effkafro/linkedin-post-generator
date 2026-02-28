@@ -93,6 +93,7 @@ export function usePostHistory() {
         language: item.language,
         content: item.content,
         versions: item.versions,
+        storyPoints: item.storyPoints,
       })
     }
   }
@@ -114,6 +115,7 @@ export function usePostHistory() {
       createdAt: new Date().toISOString(),
       charCount: item.content.length,
       versions: item.versions,
+      storyPoints: item.storyPoints,
     }
 
     // Optimistic update

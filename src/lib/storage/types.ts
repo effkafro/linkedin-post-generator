@@ -1,5 +1,5 @@
 import type { HistoryItem } from '../../types/history'
-import type { InputMode, Tone, Style, Language, SerializedPostVersion } from '../../types/post'
+import type { InputMode, Tone, Style, Language, SerializedPostVersion, StoryPoint } from '../../types/post'
 import type { JobConfig } from '../../types/job'
 import type { SourceInfo } from '../../types/source'
 
@@ -14,6 +14,7 @@ export interface NewHistoryItem {
   language: Language
   content: string
   versions?: SerializedPostVersion[]
+  storyPoints?: StoryPoint[]
 }
 
 export interface HistoryItemUpdate {

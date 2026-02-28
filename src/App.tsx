@@ -11,7 +11,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ProfileProvider } from './contexts/ProfileContext'
 import { usePostHistory } from './hooks/usePostHistory'
 import type { HistoryItem } from './types/history'
-import type { InputMode, Tone, Style, Language, SerializedPostVersion } from './types/post'
+import type { InputMode, Tone, Style, Language, SerializedPostVersion, StoryPoint } from './types/post'
 import type { JobConfig } from './types/job'
 import type { SourceInfo } from './types/source'
 
@@ -79,6 +79,7 @@ function AppContent() {
     language: Language
     content: string
     versions?: SerializedPostVersion[]
+    storyPoints?: StoryPoint[]
   }) => {
     const newItem = await addToHistory(data)
     if (newItem) {
@@ -99,6 +100,7 @@ function AppContent() {
         language: selectedHistoryItem.language,
         content: selectedHistoryItem.content,
         versions: selectedHistoryItem.versions,
+        storyPoints: selectedHistoryItem.storyPoints,
       }
       : undefined,
     [selectedHistoryItem]

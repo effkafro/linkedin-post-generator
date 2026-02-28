@@ -1,6 +1,6 @@
 import { supabase } from '../supabase'
 import type { HistoryItem } from '../../types/history'
-import type { InputMode, Tone, Style, Language, SerializedPostVersion } from '../../types/post'
+import type { InputMode, Tone, Style, Language, SerializedPostVersion, StoryPoint } from '../../types/post'
 import type { JobConfig } from '../../types/job'
 import type { SourceInfo } from '../../types/source'
 import type { Database, Json } from '../../types/database'
@@ -24,6 +24,7 @@ interface PostRow {
   content: string
   char_count: number | null
   versions: unknown
+  story_points: unknown
   created_at: string
 }
 
@@ -43,6 +44,7 @@ function transformPost(post: PostRow): HistoryItem {
     createdAt: post.created_at,
     charCount: post.char_count || post.content.length,
     versions: Array.isArray(post.versions) ? post.versions as SerializedPostVersion[] : undefined,
+    storyPoints: Array.isArray(post.story_points) ? post.story_points as StoryPoint[] : undefined,
   }
 }
 
@@ -85,6 +87,7 @@ export const supabaseStorageAdapter: StorageAdapter = {
       content: item.content,
       char_count: item.content.length,
       versions: (item.versions ?? null) as Json[] | null,
+      story_points: item.storyPoints ?? null,
     }
 
     const { data, error } = await supabase

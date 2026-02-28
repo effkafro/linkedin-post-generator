@@ -5,6 +5,12 @@ export type Tone = 'professional' | 'casual' | 'inspirational' | 'educational'
 export type Style = 'story' | 'listicle' | 'question-hook' | 'bold-statement'
 export type Language = 'de' | 'en' | 'fr' | 'es' | 'it'
 export type RefineAction = 'shorter' | 'longer' | 'formal' | 'casual' | 'custom'
+export type TopicInputMode = 'simple' | 'storyline'
+
+export interface StoryPoint {
+  label: string
+  content: string
+}
 
 export interface PostVersion {
   id: string

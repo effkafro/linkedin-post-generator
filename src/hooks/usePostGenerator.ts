@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { InputMode, Tone, Style, Language, RefineAction, PostVersion, SerializedPostVersion } from '../types/post'
+import type { InputMode, Tone, Style, Language, RefineAction, PostVersion, SerializedPostVersion, StoryPoint } from '../types/post'
 import type { JobConfig } from '../types/job'
 import type { SourceInfo } from '../types/source'
 import type { ProfilePayload } from '../types/profile'
@@ -18,6 +18,7 @@ interface GenerateParams {
   language: Language
   jobConfig?: JobConfig
   profile?: ProfilePayload
+  storyPoints?: StoryPoint[]
 }
 
 interface UsePostGeneratorReturn {
@@ -59,9 +60,13 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     setCurrentIndex(prev => prev + 1)
   }, [])
 
-  const generate = useCallback(async ({ mode, topic, url, tone, style, language, jobConfig, profile }: GenerateParams) => {
-    if (mode === 'topic' && !topic.trim()) {
+  const generate = useCallback(async ({ mode, topic, url, tone, style, language, jobConfig, profile, storyPoints }: GenerateParams) => {
+    if (mode === 'topic' && !storyPoints && !topic.trim()) {
       setError('Bitte gib ein Thema ein.')
+      return
+    }
+    if (mode === 'topic' && storyPoints && !storyPoints.some(sp => sp.content.trim())) {
+      setError('Bitte fülle mindestens einen Story-Punkt aus.')
       return
     }
     if (mode === 'url' && !url.trim()) {
@@ -96,7 +101,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode, topic, url, tone, style, language, jobConfig, profile }),
+        body: JSON.stringify({ mode, topic, url, tone, style, language, jobConfig, profile, storyPoints }),
       })
 
       if (!res.ok) {

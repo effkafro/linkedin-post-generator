@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { usePostGenerator } from '../../hooks/usePostGenerator'
 import { useProfileContext } from '../../contexts/ProfileContext'
 import { useAuth } from '../../contexts/AuthContext'
-import type { InputMode, Tone, Style, Language, RefineAction, SerializedPostVersion } from '../../types/post'
+import type { InputMode, Tone, Style, Language, RefineAction, SerializedPostVersion, TopicInputMode, StoryPoint } from '../../types/post'
 import type { JobConfig } from '../../types/job'
 import type { SourceInfo } from '../../types/source'
 import { DEFAULT_JOB_CONFIG } from '../../constants/job'
+import { DEFAULT_STORY_POINTS } from '../../constants/storyline'
 import { buildProfilePayload } from '../../utils/buildProfilePayload'
 import InputPanel from './input/InputPanel'
 import OutputPanel from './output/OutputPanel'
@@ -22,6 +23,7 @@ export interface PostWorkspaceProps {
     language: Language
     content: string
     versions?: SerializedPostVersion[]
+    storyPoints?: StoryPoint[]
   }
   onPostGenerated?: (data: {
     mode: InputMode
@@ -34,6 +36,7 @@ export interface PostWorkspaceProps {
     language: Language
     content: string
     versions?: SerializedPostVersion[]
+    storyPoints?: StoryPoint[]
   }) => void
   onVersionsChange?: (data: { versions: SerializedPostVersion[], content: string } | null) => void
 }
@@ -43,6 +46,12 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
   const [topic, setTopic] = useState(initialState?.topic ?? '')
   const [url, setUrl] = useState(initialState?.url ?? '')
   const [jobConfig, setJobConfig] = useState<JobConfig>(initialState?.jobConfig ?? DEFAULT_JOB_CONFIG)
+  const [topicInputMode, setTopicInputMode] = useState<TopicInputMode>(
+    initialState?.storyPoints?.length ? 'storyline' : 'simple'
+  )
+  const [storyPoints, setStoryPoints] = useState<StoryPoint[]>(
+    initialState?.storyPoints ?? DEFAULT_STORY_POINTS.map(sp => ({ ...sp }))
+  )
   const [tone, setTone] = useState<Tone>(initialState?.tone ?? 'professional')
   const [style, setStyle] = useState<Style>(initialState?.style ?? 'story')
   const [language, setLanguage] = useState<Language>(initialState?.language ?? 'de')
@@ -88,6 +97,13 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
     setTopic(initialState.topic)
     setUrl(initialState.url ?? '')
     setJobConfig(initialState.jobConfig ?? DEFAULT_JOB_CONFIG)
+    if (initialState.storyPoints?.length) {
+      setTopicInputMode('storyline')
+      setStoryPoints(initialState.storyPoints)
+    } else {
+      setTopicInputMode('simple')
+      setStoryPoints(DEFAULT_STORY_POINTS.map(sp => ({ ...sp })))
+    }
     setTone(initialState.tone)
     setStyle(initialState.style)
     setLanguage(initialState.language ?? 'de')
@@ -100,7 +116,10 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
 
   const handleGenerate = async () => {
     isRestoringRef.current = false
-    await generate({ mode, topic, url, tone, style, language, jobConfig: mode === 'job' ? jobConfig : undefined, profile: profilePayload })
+    const filledStoryPoints = topicInputMode === 'storyline'
+      ? storyPoints.filter(sp => sp.content.trim())
+      : undefined
+    await generate({ mode, topic, url, tone, style, language, jobConfig: mode === 'job' ? jobConfig : undefined, profile: profilePayload, storyPoints: filledStoryPoints })
   }
 
   const handleRefine = useCallback((action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => {
@@ -132,10 +151,11 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
           language,
           content: output,
           versions: getSerializedVersions(),
+          storyPoints: topicInputMode === 'storyline' ? storyPoints.filter(sp => sp.content.trim()) : undefined,
         })
       }
     }
-  }, [output, loading, versions, mode, topic, url, jobConfig, source, tone, style, language, onPostGenerated])
+  }, [output, loading, versions, mode, topic, url, jobConfig, source, tone, style, language, topicInputMode, storyPoints, onPostGenerated])
 
   // Report version changes to parent
   useEffect(() => {
@@ -152,6 +172,8 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
     setTopic('')
     setUrl('')
     setJobConfig(DEFAULT_JOB_CONFIG)
+    setTopicInputMode('simple')
+    setStoryPoints(DEFAULT_STORY_POINTS.map(sp => ({ ...sp })))
     setTone('professional')
     setStyle('story')
     setLanguage('de')
@@ -174,9 +196,11 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
         <InputPanel
           mode={mode} topic={topic} url={url} jobConfig={jobConfig}
           tone={tone} style={style} language={language} loading={loading}
+          topicInputMode={topicInputMode} storyPoints={storyPoints}
           onModeChange={setMode} onTopicChange={setTopic} onUrlChange={setUrl}
           onJobConfigChange={updateJobConfig}
           onToneChange={setTone} onStyleChange={setStyle} onLanguageChange={setLanguage}
+          onTopicInputModeChange={setTopicInputMode} onStoryPointsChange={setStoryPoints}
           onGenerate={handleGenerate}
           useProfile={useProfile}
           onUseProfileChange={handleUseProfileChange}

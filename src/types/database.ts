@@ -1,5 +1,6 @@
 import type { SourceInfo } from './source'
 import type { JobConfig } from './job'
+import type { StoryPoint } from './post'
 
 export type Json =
   | string
@@ -61,6 +62,7 @@ export interface Database {
           content: string
           char_count: number | null
           versions: Json[] | null
+          story_points: StoryPoint[] | null
           created_at: string
         }
         Insert: {
@@ -77,6 +79,7 @@ export interface Database {
           content: string
           char_count?: number | null
           versions?: Json[] | null
+          story_points?: StoryPoint[] | null
           created_at?: string
         }
         Update: {
@@ -93,6 +96,7 @@ export interface Database {
           content?: string
           char_count?: number | null
           versions?: Json[] | null
+          story_points?: StoryPoint[] | null
           created_at?: string
         }
       }

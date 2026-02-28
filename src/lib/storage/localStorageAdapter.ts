@@ -57,6 +57,7 @@ export const localStorageAdapter: StorageAdapter = {
       createdAt: new Date().toISOString(),
       charCount: item.content.length,
       versions: item.versions,
+      storyPoints: item.storyPoints,
     }
 
     const current = loadFromStorage()

@@ -37,10 +37,12 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
     onDelete(item.id)
   }
 
-  // Display title: for URL mode show source title or URL, for topic mode show topic
+  // Display title: for URL mode show source title or URL, for storyline show first story point, else topic
   const displayTitle = item.mode === 'url'
     ? (item.source?.title || item.url || 'URL')
-    : item.topic
+    : item.storyPoints?.length
+      ? item.storyPoints.find(sp => sp.content.trim())?.content || item.topic
+      : item.topic
 
   return (
     <div
@@ -53,6 +55,11 @@ export default function PostHistoryItem({ item, onSelect, onDelete }: PostHistor
             {item.mode === 'url' && (
               <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold bg-primary/20 text-primary rounded-lg backdrop-blur-md border border-primary/10">
                 URL
+              </span>
+            )}
+            {item.storyPoints && item.storyPoints.length > 0 && (
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold bg-violet-500/20 text-violet-400 rounded-lg backdrop-blur-md border border-violet-500/10">
+                Storyline
               </span>
             )}
             <h4 className="text-sm font-semibold text-foreground truncate leading-tight">

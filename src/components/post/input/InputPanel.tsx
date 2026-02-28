@@ -1,4 +1,4 @@
-import type { InputMode, Tone, Style, Language } from '../../../types/post'
+import type { InputMode, Tone, Style, Language, TopicInputMode, StoryPoint } from '../../../types/post'
 import type { JobConfig } from '../../../types/job'
 import { isValidUrl } from '../../../utils/urlValidation'
 import ModeTabs from './ModeTabs'
@@ -17,6 +17,8 @@ interface InputPanelProps {
   style: Style
   language: Language
   loading: boolean
+  topicInputMode: TopicInputMode
+  storyPoints: StoryPoint[]
   onModeChange: (mode: InputMode) => void
   onTopicChange: (topic: string) => void
   onUrlChange: (url: string) => void
@@ -24,6 +26,8 @@ interface InputPanelProps {
   onToneChange: (tone: Tone) => void
   onStyleChange: (style: Style) => void
   onLanguageChange: (language: Language) => void
+  onTopicInputModeChange: (mode: TopicInputMode) => void
+  onStoryPointsChange: (points: StoryPoint[]) => void
   onGenerate: () => void
   useProfile: boolean
   onUseProfileChange: (enabled: boolean) => void
@@ -33,12 +37,20 @@ interface InputPanelProps {
 
 export default function InputPanel({
   mode, topic, url, jobConfig, tone, style, language, loading,
+  topicInputMode, storyPoints,
   onModeChange, onTopicChange, onUrlChange, onJobConfigChange,
-  onToneChange, onStyleChange, onLanguageChange, onGenerate,
+  onToneChange, onStyleChange, onLanguageChange,
+  onTopicInputModeChange, onStoryPointsChange,
+  onGenerate,
   useProfile, onUseProfileChange, profileAvailable, profileCompleteness,
 }: InputPanelProps) {
   const canGenerate = (() => {
-    if (mode === 'topic') return !!topic.trim()
+    if (mode === 'topic') {
+      if (topicInputMode === 'storyline') {
+        return storyPoints.some(sp => sp.content.trim())
+      }
+      return !!topic.trim()
+    }
     if (mode === 'url') return !!url.trim() && isValidUrl(url)
     if (mode === 'job') {
       if (jobConfig.hasExistingPosting) {
@@ -56,7 +68,16 @@ export default function InputPanel({
           <ModeTabs mode={mode} onChange={onModeChange} />
         </div>
 
-        {mode === 'topic' && <TopicInput value={topic} onChange={onTopicChange} />}
+        {mode === 'topic' && (
+          <TopicInput
+            value={topic}
+            onChange={onTopicChange}
+            topicInputMode={topicInputMode}
+            onTopicInputModeChange={onTopicInputModeChange}
+            storyPoints={storyPoints}
+            onStoryPointsChange={onStoryPointsChange}
+          />
+        )}
         {mode === 'url' && <UrlInput value={url} onChange={onUrlChange} />}
         {mode === 'job' && (
           <JobInput

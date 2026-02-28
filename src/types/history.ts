@@ -1,8 +1,8 @@
-import type { InputMode, Tone, Style, Language, SerializedPostVersion } from './post'
+import type { InputMode, Tone, Style, Language, SerializedPostVersion, StoryPoint } from './post'
 import type { JobConfig } from './job'
 import type { SourceInfo } from './source'
 
-export type { InputMode, SourceInfo, JobConfig, SerializedPostVersion }
+export type { InputMode, SourceInfo, JobConfig, SerializedPostVersion, StoryPoint }
 
 export interface HistoryItem {
   id: string
@@ -19,6 +19,7 @@ export interface HistoryItem {
   createdAt: string
   charCount: number
   versions?: SerializedPostVersion[]
+  storyPoints?: StoryPoint[]
 }
 
 export interface PostHistoryState {
