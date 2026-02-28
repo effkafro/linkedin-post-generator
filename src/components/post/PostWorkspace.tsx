@@ -162,11 +162,11 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
     <div className="min-h-screen py-12 px-4 transition-colors duration-300">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header */}
-        <header className="text-center space-y-2 relative">
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground lg:text-5xl">
-            Content Creator
+        <header className="text-center space-y-4 relative animate-in fade-in slide-in-from-top-4 duration-700">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
+            <span className="text-gradient">Content Creator</span>
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Generiere professionelle Posts mit KI in Sekunden.
           </p>
         </header>

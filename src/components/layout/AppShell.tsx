@@ -40,7 +40,7 @@ export default function AppShell({
           </Sidebar>
         )}
 
-        <main className="flex-1 lg:ml-0 w-full max-w-5xl mx-auto flex flex-col">
+        <main className="flex-1 w-full flex flex-col min-w-0">
           {children}
         </main>
       </div>

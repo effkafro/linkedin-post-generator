@@ -43,7 +43,9 @@ export default function DashboardPage({ onClose }: DashboardPageProps) {
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight">
+                <span className="text-gradient">Dashboard</span>
+              </h1>
               <p className="text-muted-foreground mt-1">Analysiere deine Social-Media-Performance.</p>
             </div>
             <button onClick={onClose} className="glass-button h-10 px-4 text-sm font-medium">
@@ -62,7 +64,9 @@ export default function DashboardPage({ onClose }: DashboardPageProps) {
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            <span className="text-gradient">Dashboard</span>
+          </h1>
           <button onClick={onClose} className="glass-button h-10 px-4 text-sm font-medium">
             Zurueck
           </button>
