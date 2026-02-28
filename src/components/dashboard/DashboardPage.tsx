@@ -38,10 +38,10 @@ export default function DashboardPage() {
       <div className="min-h-screen py-12 px-4 transition-colors duration-300">
         <div className="max-w-3xl mx-auto space-y-8">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
               <span className="text-gradient">Dashboard</span>
             </h1>
-            <p className="text-base text-muted-foreground mt-1">Analysiere deine Social-Media-Performance.</p>
+            <p className="text-lg text-muted-foreground mt-1">Analysiere deine Social-Media-Performance.</p>
           </div>
           <DashboardSetup onImport={handleImport} importing={importing} importError={importError} />
         </div>
@@ -54,7 +54,7 @@ export default function DashboardPage() {
     <div className="min-h-screen py-12 px-4 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
-        <h1 className="text-3xl font-extrabold tracking-tight">
+        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
           <span className="text-gradient">Dashboard</span>
         </h1>
 

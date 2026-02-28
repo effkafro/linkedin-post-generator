@@ -14,7 +14,7 @@ export default function HomePage({ onSelectCreator, onSelectDashboard }: HomePag
         <div className="text-center space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-xl">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
             Dein persönlicher <br className="hidden sm:block" />
-            <span className="text-gradient">LinkedIn Assistent</span>
+            <span className="text-gradient">Social Media Assistent</span>
           </h1>
           <p className="text-lg text-muted-foreground">
             Erstelle perfekten Content und analysiere deine Performance mit KI-Unterstützung.
