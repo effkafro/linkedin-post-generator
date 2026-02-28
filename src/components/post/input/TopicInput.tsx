@@ -24,34 +24,29 @@ export default function TopicInput({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium leading-none text-foreground/80 pl-1">
-          {topicInputMode === 'simple' ? 'Thema' : 'Storyline'}
-        </label>
-        <div className="flex gap-1 p-0.5 rounded-xl bg-secondary/20">
-          <button
-            type="button"
-            onClick={() => onTopicInputModeChange('simple')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
-              topicInputMode === 'simple'
-                ? 'glass-button shadow-md'
-                : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-            }`}
-          >
-            Thema
-          </button>
-          <button
-            type="button"
-            onClick={() => onTopicInputModeChange('storyline')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
-              topicInputMode === 'storyline'
-                ? 'glass-button shadow-md'
-                : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-            }`}
-          >
-            Storyline
-          </button>
-        </div>
+      <div className="flex gap-1 p-0.5 rounded-xl bg-secondary/20 w-fit">
+        <button
+          type="button"
+          onClick={() => onTopicInputModeChange('simple')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
+            topicInputMode === 'simple'
+              ? 'glass-button shadow-md'
+              : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+          }`}
+        >
+          Thema
+        </button>
+        <button
+          type="button"
+          onClick={() => onTopicInputModeChange('storyline')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
+            topicInputMode === 'storyline'
+              ? 'glass-button shadow-md'
+              : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+          }`}
+        >
+          Storyline
+        </button>
       </div>
 
       {topicInputMode === 'simple' ? (
