@@ -29,9 +29,9 @@ Frontend (React/Vite)  →  Webhook (POST)  →  n8n Workflow  →  LLM (OpenRou
 src/
   App.tsx                              # Providers + AppShell
   types/                               # Zentrales Type-System
-    post.ts, job.ts, source.ts, profile.ts, history.ts, database.ts, analytics.ts
+    post.ts, job.ts, source.ts, profile.ts, history.ts, database.ts, analytics.ts, feedback.ts
   constants/                           # Konfiguration & Optionen
-    tone.ts, style.ts, language.ts, job.ts, refine.ts, modes.ts, platform.ts, storyline.ts
+    tone.ts, style.ts, language.ts, job.ts, refine.ts, modes.ts, platform.ts, storyline.ts, feedback.ts
   utils/                               # Pure Utility Functions
     formatText.ts, urlValidation.ts, hashContent.ts, buildProfilePayload.ts
   lib/
@@ -47,6 +47,7 @@ src/
     usePostHistory.ts                  # History CRUD (via Storage Adapters)
     useProfile.ts                      # Profile CRUD
     useAnalytics.ts                    # Dashboard Analytics (Scrape, Metrics, Trends)
+    useFeedback.ts                     # Feedback Submit (Insert, Loading, Error, Success)
     useCopyToClipboard.ts              # Clipboard Utility
   components/
     layout/   (AppShell, Sidebar, TopBar)
@@ -58,6 +59,7 @@ src/
       output/ (OutputPanel, PostDisplay, VersionNav, RefinePanel, ActionBar)
       shared/ (HelpModal, GlassSelect)
     history/  (PostHistory, PostHistoryItem)
+    feedback/ (FeedbackButton, FeedbackModal, NewFeatureBanner)
     profile/  (ProfilePage, ProfileForm, VoiceSettings, ExamplePosts, ProfileCompleteness)
     dashboard/ (DashboardPage, DashboardSetup, TimeRangeSelector, MetricsOverview,
                 EngagementChart, PostFrequencyChart, TopPostsList, ScrapeStatus)
@@ -591,6 +593,29 @@ CREATE POLICY "Users can update own voice profile" ON voice_profiles FOR UPDATE 
 CREATE POLICY "Users can delete own voice profile" ON voice_profiles FOR DELETE USING (auth.uid() = user_id);
 ```
 
+#### feedback
+```sql
+CREATE TABLE feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('feature_request', 'feedback', 'bug')),
+  category TEXT CHECK (category IN ('post_generator', 'analytics', 'profile', 'general', 'other')),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'acknowledged', 'planned', 'done')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- RLS
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can insert own feedback" ON feedback FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can read own feedback" ON feedback FOR SELECT USING (auth.uid() = user_id);
+
+-- Indexes
+CREATE INDEX idx_feedback_user_id ON feedback(user_id);
+CREATE INDEX idx_feedback_created_at ON feedback(created_at DESC);
+```
+
 #### example_posts
 ```sql
 CREATE TABLE example_posts (
@@ -679,7 +704,7 @@ interface JobConfig {
 
 #### Layout
 - **AppShell:** TopBar + Sidebar + Main Content
-- **TopBar:** Mobile Sidebar-Toggle, UserMenu, Theme-Toggle
+- **TopBar:** Mobile Sidebar-Toggle, UserMenu, FeedbackButton, Theme-Toggle
 - **Sidebar:** Desktop immer sichtbar (320px), Mobile Slide-in Drawer
 
 #### Post Workspace
@@ -952,6 +977,57 @@ Recharts SVG-Elemente unterstuetzen keine Tailwind-Klassen. CSS-Variablen (`--pr
 - Home-Button (Home-Icon) in TopBar navigiert zurueck zur Startseite
 - Dashboard/Profile "Zurueck" navigiert zurueck zur Startseite
 - Dashboard und Profil weiterhin ueber UserMenu erreichbar
+
+---
+
+## 12. In-App Feedback
+
+### Feature-Beschreibung
+Nutzer koennen direkt aus der App heraus Feedback geben, Feature-Wuensche einreichen und Bugs melden. Das Feedback wird in Supabase gespeichert (RLS-geschuetzt). Aktuell gibt es keine Admin-Ansicht — Feedback wird direkt in der Supabase-Tabelle eingesehen.
+
+### Einstiegspunkt
+- **FeedbackButton** (`MessageSquarePlus` Icon) in der TopBar zwischen UserMenu und ModeToggle
+- **NewFeatureBanner**: Erscheint einmal pro Session (`sessionStorage`) beim Seitenaufruf, weist auf das neue Feature hin. Button pulsiert (`animate-ping`) solange das Banner sichtbar ist.
+
+### FeedbackModal
+Drei Zustaende:
+1. **Nicht angemeldet**: Hinweis + "Anmelden"-Button (chainet zum AuthModal)
+2. **Formular**: Typ-Auswahl (Pill-Buttons), optionale Kategorie, Titel, Beschreibung (max 2000 Zeichen)
+3. **Erfolg**: Checkmark + "Vielen Dank!" (auto-close nach 2s)
+
+### Feedback-Typen
+| Value | Label | Icon |
+|-------|-------|------|
+| feature_request | Feature Wunsch | Lightbulb |
+| feedback | Feedback | MessageCircle |
+| bug | Bug melden | Bug |
+
+### Feedback-Kategorien (optional)
+| Value | Label |
+|-------|-------|
+| post_generator | Post Generator |
+| analytics | Analytics Dashboard |
+| profile | Profil & Stimme |
+| general | Allgemein |
+| other | Sonstiges |
+
+### Hook: useFeedback
+```typescript
+// State: loading, error, success
+// Methods: submitFeedback({ type, category, title, description }), reset()
+// Deutsche Fehlermeldungen
+```
+
+### Dateien
+```
+src/types/feedback.ts              # FeedbackType, FeedbackCategory, FeedbackStatus, FeedbackItem
+src/constants/feedback.ts          # FEEDBACK_TYPE_OPTIONS, FEEDBACK_CATEGORY_OPTIONS
+src/hooks/useFeedback.ts           # Submit-Hook mit Supabase Insert
+src/components/feedback/
+  FeedbackButton.tsx               # Icon-Button mit optionalem Pulse-Effekt
+  FeedbackModal.tsx                # Modal mit 3 Zustaenden (Auth-Gate, Formular, Erfolg)
+  NewFeatureBanner.tsx             # Session-Banner mit Glow + CTA
+```
 
 ---
 
