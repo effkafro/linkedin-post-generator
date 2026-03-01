@@ -7,6 +7,8 @@ import { ThemeProvider } from './components/theme/theme-provider'
 import AppShell from './components/layout/AppShell'
 import PostHistory from './components/history/PostHistory'
 import AuthModal from './components/auth/AuthModal'
+import FeedbackModal from './components/feedback/FeedbackModal'
+import NewFeatureBanner from './components/feedback/NewFeatureBanner'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProfileProvider } from './contexts/ProfileContext'
 import { usePostHistory } from './hooks/usePostHistory'
@@ -21,6 +23,8 @@ type AppView = 'home' | 'workspace' | 'profile' | 'dashboard'
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  const [feedbackPulse, setFeedbackPulse] = useState(false)
   const [currentView, setCurrentView] = useState<AppView>('home')
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryItem | null>(null)
   const [hasActivePost, setHasActivePost] = useState(false)
@@ -116,6 +120,8 @@ function AppContent() {
         onSidebarClose={() => setSidebarOpen(false)}
         onLoginClick={() => setAuthModalOpen(true)}
         onProfileClick={() => setCurrentView('profile')}
+        onFeedbackClick={() => setFeedbackModalOpen(true)}
+        feedbackPulse={feedbackPulse}
         showSidebar={currentView === 'workspace'}
         sidebar={
           <PostHistory
@@ -147,7 +153,13 @@ function AppContent() {
         )}
       </AppShell>
 
+      <NewFeatureBanner onFeedbackClick={() => setFeedbackModalOpen(true)} onPulseChange={setFeedbackPulse} />
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+        onLoginClick={() => setAuthModalOpen(true)}
+      />
     </>
   )
 }

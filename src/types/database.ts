@@ -192,6 +192,38 @@ export interface Database {
           updated_at?: string
         }
       }
+      feedback: {
+        Row: {
+          id: string
+          user_id: string
+          type: 'feature_request' | 'feedback' | 'bug'
+          category: 'post_generator' | 'analytics' | 'profile' | 'general' | 'other' | null
+          title: string
+          description: string
+          status: 'new' | 'acknowledged' | 'planned' | 'done'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: 'feature_request' | 'feedback' | 'bug'
+          category?: 'post_generator' | 'analytics' | 'profile' | 'general' | 'other' | null
+          title: string
+          description: string
+          status?: 'new' | 'acknowledged' | 'planned' | 'done'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: 'feature_request' | 'feedback' | 'bug'
+          category?: 'post_generator' | 'analytics' | 'profile' | 'general' | 'other' | null
+          title?: string
+          description?: string
+          status?: 'new' | 'acknowledged' | 'planned' | 'done'
+          created_at?: string
+        }
+      }
       scrape_runs: {
         Row: {
           id: string

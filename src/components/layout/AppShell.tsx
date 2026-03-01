@@ -12,13 +12,16 @@ interface AppShellProps {
   onSidebarClose: () => void
   onLoginClick: () => void
   onProfileClick: () => void
+  onFeedbackClick: () => void
+  feedbackPulse?: boolean
   showSidebar?: boolean
 }
 
 export default function AppShell({
   currentView, onViewChange,
   sidebarOpen, sidebar, children,
-  onSidebarOpen, onSidebarClose, onLoginClick, onProfileClick,
+  onSidebarOpen, onSidebarClose, onLoginClick, onProfileClick, onFeedbackClick,
+  feedbackPulse,
   showSidebar = true,
 }: AppShellProps) {
   return (
@@ -29,6 +32,8 @@ export default function AppShell({
         onSidebarOpen={onSidebarOpen}
         onLoginClick={onLoginClick}
         onProfileClick={onProfileClick}
+        onFeedbackClick={onFeedbackClick}
+        feedbackPulse={feedbackPulse}
         showSidebarToggle={showSidebar}
       />
 

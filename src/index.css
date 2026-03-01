@@ -276,3 +276,14 @@ summary {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
 }
+
+/* Feedback button pulse – subtle glow, 3 pulses */
+@keyframes feedback-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  10%, 30%, 50% { box-shadow: 0 0 8px 3px var(--primary); }
+  20%, 40%, 60% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.animate-feedback-pulse {
+  animation: feedback-glow 2.4s ease-in-out forwards;
+}

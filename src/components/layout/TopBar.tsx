@@ -1,4 +1,5 @@
 import UserMenu from '../auth/UserMenu'
+import FeedbackButton from '../feedback/FeedbackButton'
 import { ModeToggle } from '../theme/mode-toggle'
 import ViewSwitcher from './ViewSwitcher'
 
@@ -8,11 +9,13 @@ interface TopBarProps {
   onSidebarOpen: () => void
   onLoginClick: () => void
   onProfileClick: () => void
+  onFeedbackClick: () => void
+  feedbackPulse?: boolean
   showSidebarToggle?: boolean
 }
 
 export default function TopBar({
-  currentView, onViewChange, onSidebarOpen, onLoginClick, onProfileClick, showSidebarToggle = true
+  currentView, onViewChange, onSidebarOpen, onLoginClick, onProfileClick, onFeedbackClick, feedbackPulse, showSidebarToggle = true
 }: TopBarProps) {
   return (
     <>
@@ -42,6 +45,7 @@ export default function TopBar({
       {/* Right side controls */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
         <UserMenu onLoginClick={onLoginClick} onProfileClick={onProfileClick} />
+        <FeedbackButton onClick={onFeedbackClick} pulse={feedbackPulse} />
         <ModeToggle />
       </div>
     </>
