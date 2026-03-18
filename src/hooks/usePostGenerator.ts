@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { InputMode, Tone, Style, Language, RefineAction, PostVersion, SerializedPostVersion, StoryPoint } from '../types/post'
 import type { JobConfig } from '../types/job'
 import type { SourceInfo } from '../types/source'
 import type { ProfilePayload } from '../types/profile'
 import { REFINE_PROMPTS } from '../constants/refine'
+import { generateResponseSchema } from '../schemas/api'
 
 // Re-export types for backward compatibility during migration
 export type { Tone, Style, Language, RefineAction, PostVersion }
@@ -26,6 +27,7 @@ interface UsePostGeneratorReturn {
   loading: boolean
   refining: RefineAction | null
   error: string | null
+  cooldown: boolean
   versions: PostVersion[]
   currentIndex: number
   source: SourceInfo | null
@@ -44,6 +46,28 @@ export function usePostGenerator(): UsePostGeneratorReturn {
   const [loading, setLoading] = useState(false)
   const [refining, setRefining] = useState<RefineAction | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [cooldown, setCooldown] = useState(false)
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cleanup cooldown timer on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearTimeout(cooldownTimerRef.current)
+      }
+    }
+  }, [])
+
+  const startCooldown = useCallback(() => {
+    setCooldown(true)
+    if (cooldownTimerRef.current) {
+      clearTimeout(cooldownTimerRef.current)
+    }
+    cooldownTimerRef.current = setTimeout(() => {
+      setCooldown(false)
+      cooldownTimerRef.current = null
+    }, 5000)
+  }, [])
 
   const output = currentIndex >= 0 && versions[currentIndex] ? versions[currentIndex].content : ''
   const source = currentIndex >= 0 && versions[currentIndex] ? versions[currentIndex].source || null : null
@@ -61,6 +85,11 @@ export function usePostGenerator(): UsePostGeneratorReturn {
   }, [])
 
   const generate = useCallback(async ({ mode, topic, url, tone, style, language, jobConfig, profile, storyPoints }: GenerateParams) => {
+    if (cooldown) {
+      setError('Bitte warte kurz bevor du erneut generierst.')
+      return
+    }
+
     if (mode === 'topic' && !storyPoints && !topic.trim()) {
       setError('Bitte gib ein Thema ein.')
       return
@@ -97,33 +126,31 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     setVersions([])
     setCurrentIndex(-1)
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+
     try {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode, topic, url, tone, style, language, jobConfig, profile, storyPoints }),
+        signal: controller.signal,
       })
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`)
       }
 
-      const data = await res.json()
+      const data: unknown = await res.json()
 
-      // Validate response structure
-      if (typeof data !== 'object' || data === null) {
-        throw new Error('Invalid response format')
+      // Zod-Validierung der Response-Struktur
+      const parsed = generateResponseSchema.safeParse(data)
+      if (!parsed.success) {
+        throw new Error('Ungültiges Response-Format')
       }
 
-      const content = typeof data.output === 'string' && data.output.trim()
-        ? data.output
-        : 'Keine Antwort erhalten.'
-
-      // Validate source if present
-      const sourceInfo: SourceInfo | undefined = data.source && typeof data.source === 'object'
-        && typeof data.source.url === 'string' && typeof data.source.title === 'string'
-        ? data.source as SourceInfo
-        : undefined
+      const content = parsed.data.output.trim() || 'Keine Antwort erhalten.'
+      const sourceInfo: SourceInfo | undefined = parsed.data.source ?? undefined
 
       const newVersion: PostVersion = {
         id: crypto.randomUUID(),
@@ -134,14 +161,25 @@ export function usePostGenerator(): UsePostGeneratorReturn {
       }
       setVersions([newVersion])
       setCurrentIndex(0)
-    } catch {
-      setError('Fehler bei der Verbindung zum Server. Bitte versuche es erneut.')
+      startCooldown()
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Zeitüberschreitung — der Server antwortet nicht. Bitte versuche es erneut.')
+      } else {
+        setError('Fehler bei der Verbindung zum Server. Bitte versuche es erneut.')
+      }
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
-  }, [])
+  }, [cooldown, startCooldown])
 
   const refine = useCallback(async (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }, profile?: ProfilePayload) => {
+    if (cooldown) {
+      setError('Bitte warte kurz vor der nächsten Anfrage.')
+      return
+    }
+
     if (!output) {
       setError('Kein Post zum Bearbeiten vorhanden.')
       return
@@ -164,35 +202,44 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     const style = settings?.style ?? 'story'
     const language = settings?.language ?? 'de'
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+
     try {
       const res = await fetch(import.meta.env.VITE_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'topic', topic: prompt, url: '', tone, style, language, profile }),
+        signal: controller.signal,
       })
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`)
       }
 
-      const data = await res.json()
+      const data: unknown = await res.json()
 
-      // Validate response structure
-      if (typeof data !== 'object' || data === null) {
-        throw new Error('Invalid response format')
+      // Zod-Validierung der Response-Struktur
+      const parsed = generateResponseSchema.safeParse(data)
+      if (!parsed.success) {
+        throw new Error('Ungültiges Response-Format')
       }
 
-      const content = typeof data.output === 'string' && data.output.trim()
-        ? data.output
-        : 'Keine Antwort erhalten.'
+      const content = parsed.data.output.trim() || 'Keine Antwort erhalten.'
 
       addVersion(content, action, source || undefined)
-    } catch {
-      setError('Fehler bei der Bearbeitung. Bitte versuche es erneut.')
+      startCooldown()
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Zeitüberschreitung — der Server antwortet nicht. Bitte versuche es erneut.')
+      } else {
+        setError('Fehler bei der Bearbeitung. Bitte versuche es erneut.')
+      }
     } finally {
+      clearTimeout(timeoutId)
       setRefining(null)
     }
-  }, [output, source, addVersion])
+  }, [output, source, addVersion, cooldown, startCooldown])
 
   const goToVersion = useCallback((index: number) => {
     if (index >= 0 && index < versions.length) {
@@ -248,6 +295,7 @@ export function usePostGenerator(): UsePostGeneratorReturn {
     loading,
     refining,
     error,
+    cooldown,
     versions,
     currentIndex,
     source,

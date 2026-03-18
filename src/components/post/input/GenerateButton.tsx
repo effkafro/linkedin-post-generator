@@ -3,16 +3,19 @@ import type { InputMode } from '../../../types/post'
 interface GenerateButtonProps {
   loading: boolean
   disabled: boolean
+  cooldown: boolean
   mode: InputMode
   onClick: () => void
 }
 
-export default function GenerateButton({ loading, disabled, mode, onClick }: GenerateButtonProps) {
+export default function GenerateButton({ loading, disabled, cooldown, mode, onClick }: GenerateButtonProps) {
+  const isDisabled = loading || disabled || cooldown
+
   return (
     <button
       onClick={onClick}
-      disabled={loading || disabled}
-      className={`flex w-full items-center justify-center rounded-2xl py-4 text-base font-semibold shadow-lg transition-all duration-300 ${loading || disabled
+      disabled={isDisabled}
+      className={`flex w-full items-center justify-center rounded-2xl py-4 text-base font-semibold shadow-lg transition-all duration-300 ${isDisabled
         ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
         : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]'
         }`}
@@ -27,6 +30,8 @@ export default function GenerateButton({ loading, disabled, mode, onClick }: Gen
           </span>
           {mode === 'url' ? 'Lade Artikel...' : 'Generiere Post...'}
         </>
+      ) : cooldown ? (
+        'Bitte warten...'
       ) : (
         'Post Generieren'
       )}

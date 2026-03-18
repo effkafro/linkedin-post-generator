@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 import { useProfileContext } from '../../contexts/ProfileContext'
 import ProfileCompleteness from './ProfileCompleteness'
 import ProfileForm from './ProfileForm'
@@ -10,6 +12,15 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ onClose }: ProfilePageProps) {
   const { profile, examplePosts, loading, saving, updateProfile, addExamplePost, removeExamplePost, completeness } = useProfileContext()
+  const wasSaving = useRef(false)
+
+  // Show toast when saving completes
+  useEffect(() => {
+    if (wasSaving.current && !saving) {
+      toast.success('Profil gespeichert')
+    }
+    wasSaving.current = saving
+  }, [saving])
 
   if (loading) {
     return (
@@ -69,11 +80,6 @@ export default function ProfilePage({ onClose }: ProfilePageProps) {
           />
         </div>
 
-        {saving && (
-          <div className="fixed bottom-6 right-6 glass-panel px-4 py-2 text-sm font-medium text-primary animate-in fade-in slide-in-from-bottom-2">
-            Wird gespeichert...
-          </div>
-        )}
       </div>
     </div>
   )

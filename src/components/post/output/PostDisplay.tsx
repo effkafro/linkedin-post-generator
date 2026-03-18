@@ -1,5 +1,5 @@
 import type { SourceInfo } from '../../../types/source'
-import { formatTextInteractive } from '../../../utils/formatText'
+import { formatTextSafe } from '../../../utils/formatText'
 
 interface PostDisplayProps {
   content: string
@@ -9,12 +9,9 @@ interface PostDisplayProps {
 export default function PostDisplay({ content, source }: PostDisplayProps) {
   return (
     <>
-      <div
-        className="p-6 md:p-8 whitespace-pre-wrap leading-relaxed text-foreground/90 font-outfit text-lg"
-        dangerouslySetInnerHTML={{
-          __html: formatTextInteractive(content)
-        }}
-      />
+      <div className="p-6 md:p-8 whitespace-pre-wrap leading-relaxed text-foreground/90 font-outfit text-lg">
+        {formatTextSafe(content)}
+      </div>
 
       {source && (
         <div className="px-6 py-3 bg-white/5 border-t border-white/5 text-xs text-muted-foreground flex items-center gap-2">

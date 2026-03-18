@@ -75,7 +75,7 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
   }, [])
 
   const {
-    output, loading, refining, error, versions, currentIndex, source,
+    output, loading, refining, error, cooldown, versions, currentIndex, source,
     generate, refine, goToVersion, reset, loadContent, loadVersions, getSerializedVersions,
   } = usePostGenerator()
 
@@ -195,7 +195,7 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
 
         <InputPanel
           mode={mode} topic={topic} url={url} jobConfig={jobConfig}
-          tone={tone} style={style} language={language} loading={loading}
+          tone={tone} style={style} language={language} loading={loading} cooldown={cooldown}
           topicInputMode={topicInputMode} storyPoints={storyPoints}
           onModeChange={setMode} onTopicChange={setTopic} onUrlChange={setUrl}
           onJobConfigChange={updateJobConfig}

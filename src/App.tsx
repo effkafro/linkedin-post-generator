@@ -1,9 +1,11 @@
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import PostWorkspace from './components/post/PostWorkspace'
 import ProfilePage from './components/profile/ProfilePage'
-import DashboardPage from './components/dashboard/DashboardPage'
 import HomePage from './components/home/HomePage'
 import { ThemeProvider } from './components/theme/theme-provider'
+import { Toaster } from 'sonner'
+
+const DashboardPage = lazy(() => import('./components/dashboard/DashboardPage'))
 import AppShell from './components/layout/AppShell'
 import PostHistory from './components/history/PostHistory'
 import AuthModal from './components/auth/AuthModal'
@@ -140,7 +142,9 @@ function AppContent() {
             onSelectDashboard={() => setCurrentView('dashboard')}
           />
         ) : currentView === 'dashboard' ? (
-          <DashboardPage />
+          <Suspense fallback={<DashboardSkeleton />}>
+            <DashboardPage />
+          </Suspense>
         ) : currentView === 'profile' ? (
           <ProfilePage onClose={() => setCurrentView('home')} />
         ) : (
@@ -164,6 +168,25 @@ function AppContent() {
   )
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen py-12 px-4">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="h-12 w-48 rounded-xl bg-muted/50 animate-pulse" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="glass-panel p-6 h-28 animate-pulse" />
+          ))}
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="glass-panel h-64 animate-pulse" />
+          <div className="glass-panel h-64 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Main App component wraps everything with providers
 export default function App() {
   return (
@@ -171,6 +194,13 @@ export default function App() {
       <ProfileProvider>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <AppContent />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              className: 'glass-panel',
+            }}
+            richColors
+          />
         </ThemeProvider>
       </ProfileProvider>
     </AuthProvider>

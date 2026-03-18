@@ -17,6 +17,7 @@ interface InputPanelProps {
   style: Style
   language: Language
   loading: boolean
+  cooldown: boolean
   topicInputMode: TopicInputMode
   storyPoints: StoryPoint[]
   onModeChange: (mode: InputMode) => void
@@ -36,7 +37,7 @@ interface InputPanelProps {
 }
 
 export default function InputPanel({
-  mode, topic, url, jobConfig, tone, style, language, loading,
+  mode, topic, url, jobConfig, tone, style, language, loading, cooldown,
   topicInputMode, storyPoints,
   onModeChange, onTopicChange, onUrlChange, onJobConfigChange,
   onToneChange, onStyleChange, onLanguageChange,
@@ -98,6 +99,7 @@ export default function InputPanel({
         <GenerateButton
           loading={loading}
           disabled={!canGenerate}
+          cooldown={cooldown}
           mode={mode}
           onClick={onGenerate}
         />

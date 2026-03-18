@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Lightbulb, MessageCircle, Bug, CheckCircle2 } from 'lucide-react'
+import { Lightbulb, MessageCircle, Bug } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '../../contexts/AuthContext'
 import { useFeedback } from '../../hooks/useFeedback'
 import { FEEDBACK_TYPE_OPTIONS, FEEDBACK_CATEGORY_OPTIONS } from '../../constants/feedback'
@@ -39,11 +40,11 @@ export default function FeedbackModal({ isOpen, onClose, onLoginClick }: Feedbac
     }
   }, [isOpen, reset])
 
-  // Auto-close after success
+  // Auto-close after success and show toast
   useEffect(() => {
     if (success) {
-      const timer = setTimeout(onClose, 2000)
-      return () => clearTimeout(timer)
+      toast.success('Vielen Dank! Dein Feedback wurde erfolgreich gesendet.')
+      onClose()
     }
   }, [success, onClose])
 
@@ -101,17 +102,6 @@ export default function FeedbackModal({ isOpen, onClose, onLoginClick }: Feedbac
               >
                 Anmelden
               </button>
-            </div>
-          ) : success ? (
-            /* Success state */
-            <div className="text-center space-y-4 py-8">
-              <div className="w-14 h-14 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-lg font-semibold">Vielen Dank!</p>
-                <p className="text-sm text-muted-foreground">Dein Feedback wurde erfolgreich gesendet.</p>
-              </div>
             </div>
           ) : (
             /* Form */

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import { useAuth } from '../contexts/AuthContext'
 import { getSupabase } from '../lib/supabase'
 import { parseLinkedInExport } from '../utils/linkedinExportParser'
@@ -324,9 +325,13 @@ export function useAnalytics() {
 
       // 6. Reload data
       await loadData()
+
+      toast.success(`Import erfolgreich: ${postsNew} neue, ${postsUpdated} aktualisierte Posts.`)
     } catch (err) {
       console.error('Import failed:', err)
-      setImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen')
+      const errorMsg = err instanceof Error ? err.message : 'Import fehlgeschlagen'
+      setImportError(errorMsg)
+      toast.error(errorMsg)
     } finally {
       setImporting(false)
     }
