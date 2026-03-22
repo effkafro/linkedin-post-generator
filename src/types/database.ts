@@ -152,7 +152,13 @@ export interface Database {
           comments_count: number
           shares_count: number
           engagement_total: number
+          impressions: number
+          clicks: number
+          ctr: number
+          engagement_rate: number
+          video_views: number
           media_type: string
+          source_type: string
           raw_data: Json | null
           created_at: string
           updated_at: string
@@ -169,7 +175,14 @@ export interface Database {
           reactions_count?: number
           comments_count?: number
           shares_count?: number
+          engagement_total?: number
+          impressions?: number
+          clicks?: number
+          ctr?: number
+          engagement_rate?: number
+          video_views?: number
           media_type?: string
+          source_type?: string
           raw_data?: Json | null
           created_at?: string
           updated_at?: string
@@ -186,7 +199,14 @@ export interface Database {
           reactions_count?: number
           comments_count?: number
           shares_count?: number
+          engagement_total?: number
+          impressions?: number
+          clicks?: number
+          ctr?: number
+          engagement_rate?: number
+          video_views?: number
           media_type?: string
+          source_type?: string
           raw_data?: Json | null
           created_at?: string
           updated_at?: string
@@ -236,6 +256,8 @@ export interface Database {
           error_message: string | null
           started_at: string | null
           completed_at: string | null
+          run_type: string
+          file_name: string | null
         }
         Insert: {
           id?: string
@@ -248,6 +270,8 @@ export interface Database {
           error_message?: string | null
           started_at?: string | null
           completed_at?: string | null
+          run_type?: string
+          file_name?: string | null
         }
         Update: {
           id?: string
@@ -260,6 +284,40 @@ export interface Database {
           error_message?: string | null
           started_at?: string | null
           completed_at?: string | null
+          run_type?: string
+          file_name?: string | null
+        }
+      }
+      analytics_daily: {
+        Row: {
+          id: string
+          user_id: string
+          company_page_id: string
+          date: string
+          impressions: number
+          engagements: number
+          new_followers: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_page_id: string
+          date: string
+          impressions?: number
+          engagements?: number
+          new_followers?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          company_page_id?: string
+          date?: string
+          impressions?: number
+          engagements?: number
+          new_followers?: number
+          created_at?: string
         }
       }
     }
