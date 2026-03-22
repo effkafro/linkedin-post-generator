@@ -147,6 +147,7 @@
 }
 
 body {
+  color: var(--foreground);
   background-color: var(--background);
   background-image:
     radial-gradient(ellipse at top left, var(--mesh-1), transparent 60%),
