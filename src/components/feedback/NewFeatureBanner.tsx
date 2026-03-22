@@ -51,7 +51,7 @@ export default function NewFeatureBanner({ onFeedbackClick, onPulseChange }: New
         <div className="glass-panel-elevated p-5 relative rounded-[calc(1.6rem-1px)]">
           <button
             onClick={dismiss}
-            className="absolute top-4 right-4 p-1.5 rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all z-10 glass-panel border-transparent shadow-none"
+            className="absolute top-3 right-3 p-2.5 rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all z-10"
             aria-label="Schließen"
           >
             <X className="w-4 h-4" />
