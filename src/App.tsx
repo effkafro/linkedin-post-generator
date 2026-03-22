@@ -153,6 +153,7 @@ function AppContent() {
             initialState={initialState}
             onPostGenerated={handlePostGenerated}
             onVersionsChange={handleVersionsChange}
+            onLoginClick={() => setAuthModalOpen(true)}
           />
         )}
       </AppShell>

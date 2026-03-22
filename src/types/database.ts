@@ -320,6 +320,26 @@ export interface Database {
           created_at?: string
         }
       }
+      anonymous_usage: {
+        Row: {
+          fingerprint: string
+          actions_used: number
+          first_seen_at: string
+          last_action_at: string
+        }
+        Insert: {
+          fingerprint: string
+          actions_used?: number
+          first_seen_at?: string
+          last_action_at?: string
+        }
+        Update: {
+          fingerprint?: string
+          actions_used?: number
+          first_seen_at?: string
+          last_action_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

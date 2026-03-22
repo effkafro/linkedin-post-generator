@@ -2,14 +2,17 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { usePostGenerator } from '../../hooks/usePostGenerator'
 import { useProfileContext } from '../../contexts/ProfileContext'
 import { useAuth } from '../../contexts/AuthContext'
+import { useUsageLimit } from '../../hooks/useUsageLimit'
 import type { InputMode, Tone, Style, Language, RefineAction, SerializedPostVersion, TopicInputMode, StoryPoint } from '../../types/post'
 import type { JobConfig } from '../../types/job'
 import type { SourceInfo } from '../../types/source'
 import { DEFAULT_JOB_CONFIG } from '../../constants/job'
 import { DEFAULT_STORY_POINTS } from '../../constants/storyline'
+import { ANONYMOUS_ACTION_LIMIT } from '../../constants/usageLimit'
 import { buildProfilePayload } from '../../utils/buildProfilePayload'
 import InputPanel from './input/InputPanel'
 import OutputPanel from './output/OutputPanel'
+import UsageLimitModal from '../auth/UsageLimitModal'
 
 export interface PostWorkspaceProps {
   initialState?: {
@@ -39,9 +42,10 @@ export interface PostWorkspaceProps {
     storyPoints?: StoryPoint[]
   }) => void
   onVersionsChange?: (data: { versions: SerializedPostVersion[], content: string } | null) => void
+  onLoginClick?: () => void
 }
 
-export default function PostWorkspace({ initialState, onPostGenerated, onVersionsChange }: PostWorkspaceProps) {
+export default function PostWorkspace({ initialState, onPostGenerated, onVersionsChange, onLoginClick }: PostWorkspaceProps) {
   const [mode, setMode] = useState<InputMode>(initialState?.mode ?? 'topic')
   const [topic, setTopic] = useState(initialState?.topic ?? '')
   const [url, setUrl] = useState(initialState?.url ?? '')
@@ -58,6 +62,8 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
 
   const { user } = useAuth()
   const { profile: voiceProfile, examplePosts, completeness } = useProfileContext()
+  const { actionsRemaining, limitReached, checkAndIncrement } = useUsageLimit()
+  const [showLimitModal, setShowLimitModal] = useState(false)
 
   const [useProfile, setUseProfile] = useState(() =>
     localStorage.getItem('use-profile-context') === 'true'
@@ -115,6 +121,11 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
   }, [initialState, loadContent, loadVersions])
 
   const handleGenerate = async () => {
+    const allowed = await checkAndIncrement()
+    if (!allowed) {
+      setShowLimitModal(true)
+      return
+    }
     isRestoringRef.current = false
     const filledStoryPoints = topicInputMode === 'storyline'
       ? storyPoints.filter(sp => sp.content.trim())
@@ -122,9 +133,14 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
     await generate({ mode, topic, url, tone, style, language, jobConfig: mode === 'job' ? jobConfig : undefined, profile: profilePayload, storyPoints: filledStoryPoints })
   }
 
-  const handleRefine = useCallback((action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => {
+  const handleRefine = useCallback(async (action: RefineAction, customInstruction?: string, settings?: { tone: Tone; style: Style; language: Language }) => {
+    const allowed = await checkAndIncrement()
+    if (!allowed) {
+      setShowLimitModal(true)
+      return
+    }
     return refine(action, customInstruction, settings, profilePayload)
-  }, [refine, profilePayload])
+  }, [refine, profilePayload, checkAndIncrement])
 
   const updateJobConfig = useCallback((updates: Partial<JobConfig>) => {
     setJobConfig(prev => ({ ...prev, ...updates }))
@@ -193,6 +209,48 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
           </p>
         </header>
 
+        {/* Usage Limit Banner */}
+        {!user && limitReached && (
+          <div className="glass-panel border-destructive/20 bg-destructive/5 px-5 py-3 rounded-2xl text-sm flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-full bg-destructive/10 text-destructive shrink-0">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <span className="text-muted-foreground">
+                Kostenloses Limit erreicht
+              </span>
+            </div>
+            <button
+              onClick={() => setShowLimitModal(true)}
+              className="text-primary hover:text-primary/80 text-xs font-semibold hover:underline transition-colors shrink-0"
+            >
+              Anmelden
+            </button>
+          </div>
+        )}
+        {!user && !limitReached && actionsRemaining < ANONYMOUS_ACTION_LIMIT && (
+          <div className="glass-panel border-primary/20 bg-primary/5 px-5 py-3 rounded-2xl text-sm flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-full bg-primary/10 text-primary shrink-0">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span className="text-muted-foreground">
+                Noch <strong className="text-foreground">{actionsRemaining}</strong> kostenlose {actionsRemaining === 1 ? 'Aktion' : 'Aktionen'} verfügbar
+              </span>
+            </div>
+            <button
+              onClick={onLoginClick}
+              className="text-primary hover:text-primary/80 text-xs font-semibold hover:underline transition-colors shrink-0"
+            >
+              Anmelden
+            </button>
+          </div>
+        )}
+
         <InputPanel
           mode={mode} topic={topic} url={url} jobConfig={jobConfig}
           tone={tone} style={style} language={language} loading={loading} cooldown={cooldown}
@@ -231,6 +289,8 @@ export default function PostWorkspace({ initialState, onPostGenerated, onVersion
           onGoToVersion={goToVersion} onRefine={handleRefine} onReset={handleReset}
         />
       </div>
+
+      <UsageLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
     </div>
   )
 }
