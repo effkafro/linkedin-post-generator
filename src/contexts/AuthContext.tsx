@@ -81,9 +81,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // Safety timeout: if auth state never resolves, stop loading after 3s
+    const timeout = setTimeout(() => {
+      setLoading(false)
+    }, 3000)
+
     // onAuthStateChange fires INITIAL_SESSION on mount — single source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        clearTimeout(timeout)
+
         // Handle invalid refresh token: clean up local state silently
         if (event === 'TOKEN_REFRESHED' && !session) {
           supabase!.auth.signOut({ scope: 'local' })
@@ -111,7 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [fetchOrCreateProfile])
 
   const signIn = useCallback(async (email: string, password: string): Promise<{ error: AuthError | null }> => {
